@@ -32,6 +32,15 @@ if [[ -z "$3" ]]; then
 fi
 labels="$3"
 
+export DEBIAN_FRONTEND=noninteractive
+sudo apt-get update \
+    && sudo apt-get install -y \
+        jq \
+        wget \
+        python3 python3-pip \
+        unzip \
+        nodejs npm
+
 echo "Downloading actions-runner install"
 # Create a folder
 mkdir -p actions-runner && cd actions-runner

@@ -21,9 +21,9 @@ terraform {
 provider "proxmox" {
   endpoint = var.pve_endpoint
   insecure = true
-  ssh {
-    agent       = false
-    username    = "root"
-    private_key = file("~/.ssh/pveroot")
-  }
+  # ssh {
+  #   agent       = false
+  #   username    = "root"
+  #   private_key = file("~/.ssh/pveroot")
+  # }
 }
