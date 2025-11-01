@@ -98,6 +98,7 @@ jobs:
           path: release-repo
       - uses: actions/checkout@v5
         with:
+          repository: jlroskens/homelab-iac
           ref: feature/setup
           path: homelab-iac
       - name: Add Major ${{needs.get-next-version.outputs.major-version}} Tag
