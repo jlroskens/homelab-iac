@@ -22,7 +22,7 @@ on:
           Runs this workflow on the specified runner. Defaults to ubuntu-latest
       disable-summary:
         required: false
-        type: bool
+        type: boolean
         default: false
         description: >
           Disables output of versions to the Job Summary.
