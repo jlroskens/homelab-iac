@@ -1,120 +1,20 @@
-# Reusable Workflow
-name: 𝌚 Create Release
-description: > 
-  Gets the next semantic version from the codacy/git-version marketplace action and outputs it along 
-  with the Major (v#) and Minor (v#.#) versions. If the release-branch is set to the current branch then
-  creates a GitHub Release and adds tags for the Major and Minor versions.
+name: 𝌚 Publish GitHub Release
+
 on:
-  workflow_call:
-    inputs:
-      release-branch:
-        required: false
-        type: string
-        default: 'main'
-        description: >
-          The branch to create the release from. If the checked out branch does not match
-          the release-branch then a release will not be created.
-      runs-on:
-        required: false
-        type: string
-        default: ubuntu-latest
-        description: >
-          Runs this workflow on the specified runner. Defaults to ubuntu-latest
-      disable-summary:
-        required: false
-        type: boolean
-        default: false
-        description: >
-          Disables output of versions to the Job Summary.
-    outputs:
-        major-version:
-            description: "Major version - 'v#'"
-            value: ${{ jobs.get-next-version.outputs.major-version }}
-        minor-version:
-            description: "Minor version - 'v#.#'"
-            value: ${{ jobs.get-next-version.outputs.minor-version }}
-        semantic-version:
-            description: "Semantic version - '#.#.#'"
-            value: ${{ jobs.get-next-version.outputs.version }}
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '.github/workflows/release.yml'
+  workflow_dispatch:
+
 permissions:
   id-token: write
   contents: write
   actions: read
 jobs:
-  get-next-version:
-    name: Get Versions
-    runs-on: ${{ inputs.runs-on }}
-    outputs:
-      version: '${{ steps.codacy-version.outputs.version }}'
-      major-version: '${{ steps.versions.outputs.major-version }}'
-      minor-version: '${{ steps.versions.outputs.minor-version }}'      
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v5
-        with:
-          ref: '${{ github.head_ref }}'
-          fetch-depth: 0
-      - name: Get Version
-        id: codacy-version
-        uses: codacy/git-version@2.8.6
-        with:
-          release-branch: '${{inputs.release-branch}}'
-      - name: Set Major & Minor Versions
-        id: versions
-        shell: bash
-        env:
-          SEM_VERSION: ${{ steps.codacy-version.outputs.version }}
-        run: |
-          major_version=$(echo ${SEM_VERSION} | awk -F. '{printf "v%d\n", $1}')
-          echo "major-version=${major_version}" >> $GITHUB_OUTPUT
-          minor_version=$(echo ${SEM_VERSION} | awk -F. '{printf "v%d.%d\n", $1,$2}')
-          echo "minor-version=${minor_version}" >> $GITHUB_OUTPUT
-      - name: Job Summary Versions
-        if: ${{ !inputs.disable-summary }}
-        shell: bash
-        env:
-          SEM_VERSION: ${{ steps.codacy-version.outputs.version }}
-          MAJOR_VERSION: '${{ steps.versions.outputs.major-version }}'
-          MINOR_VERSION: '${{ steps.versions.outputs.minor-version }}'
-        run: |
-          printf '## Versions\n\n' >> $GITHUB_STEP_SUMMARY
-          printf "| Semantic | Major | Minor |\n|----------|-------|-------|\n" >> $GITHUB_STEP_SUMMARY
-          printf "| $SEM_VERSION | $MAJOR_VERSION | $MINOR_VERSION |\n\n" >> $GITHUB_STEP_SUMMARY
-  
   create-release:
-    name: Tag and Release
-    runs-on: ${{ inputs.runs-on }}
-    needs: get-next-version
-    if: ${{ success() && ( github.ref_name == inputs.release-branch )}}
-    defaults:
-      run:
-        working-directory: ./release-repo
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v5
-        with:
-          ref: '${{ github.head_ref }}'
-          fetch-depth: 0
-          path: release-repo
-      - uses: actions/checkout@v5
-        with:
-          repository: jlroskens/homelab-iac
-          ref: feature/setup
-          path: homelab-iac
-      - name: Add Major ${{needs.get-next-version.outputs.major-version}} Tag
-        uses: ./homelab-iac/.github/actions/savetag
-        with: 
-          tag: ${{needs.get-next-version.outputs.major-version}}
-
-      - name: Add Minor ${{needs.get-next-version.outputs.minor-version}} Tag
-        uses: ./homelab-iac/.github/actions/savetag
-        with: 
-          tag: ${{needs.get-next-version.outputs.minor-version}}
-
-      - name: Create Release ${{needs.get-next-version.outputs.version}}
-        if: ${{ success() && ( github.ref_name == inputs.release-branch )}}
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_VERSION: ${{needs.get-next-version.outputs.version}}
-        run: gh release create "${RELEASE_VERSION}" --title="v${RELEASE_VERSION#v}" --generate-notes
+    name: Create Release
+    uses: jlroskens/ci-workflows/.github/workflows/release.yml@v1
+    with:
+      release-branch: main
