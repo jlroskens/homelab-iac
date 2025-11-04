@@ -1,5 +1,5 @@
 resource "proxmox_virtual_environment_download_file" "downloads" {
-  for_each                = { for idx, file in var.pve_download_files : idx => file }
+  for_each                = { for idx, file in var.pve_download_files : "${idx}-${file.url}" => file }
   content_type            = each.value.content_type
   datastore_id            = each.value.datastore_id
   node_name               = each.value.node_name

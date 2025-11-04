@@ -1,7 +1,5 @@
 terraform {
   required_version = "~> 1.6"
-  # Use NFS mounted /mnt/iac-state/.terraform/ directory for state files
-  # Requires NFS mount be configured ahead of time
   backend "local" {
     path = var.state_file
   }

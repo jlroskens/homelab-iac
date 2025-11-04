@@ -78,6 +78,8 @@ resource "proxmox_virtual_environment_vm" "this" {
   }
 
   # Disk configuration
+  boot_order = var.boot_order
+  
   dynamic "disk" {
     for_each = { for disk in var.disks : disk.interface => disk }
     content {
