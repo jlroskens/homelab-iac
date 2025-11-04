@@ -1,0 +1,47 @@
+#cloud-config
+apt:
+  sources:
+    docker.list:
+      source: deb [arch=amd64] https://download.docker.com/linux/ubuntu $RELEASE stable
+      keyid: 9DC858229FC7DD38854AE2D88D81803C0EBFCD88
+
+package_update: true
+package_upgrade: true
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - gnupg-agent
+  - gnupg
+  - software-properties-common
+  - openssh-server
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - nfs-common
+  - qemu-guest-agent
+  - git
+  - jq
+  - wget
+  - curl
+  - golang
+  - whois
+  - dnsutils
+  - unzip
+  - python3
+  - python3-pip
+  - nodejs
+  - npm
+  
+allow_public_ssh_keys: true
+ssh_deletekeys: true
+ssh_pwauth: false
+
+groups:
+  - docker
+
+runcmd:
+  - systemctl enable --now qemu-guest-agent
+  - systemctl reload ssh || systemctl restart ssh
+  - go install github.com/mikefarah/yq/v4@latest
+  - mkdir -p /mnt/iac-state
+  - echo "${nfs_server}:/export/iac-state    /mnt/iac-state/    nfs    defaults    0 0" >> /etc/fstab
