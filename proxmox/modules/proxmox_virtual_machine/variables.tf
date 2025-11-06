@@ -129,20 +129,21 @@ variable "cpu" {
     cores            = optional(number, 1)
     hotplugged_vcpus = optional(number, 0)
     cpu_limit        = optional(number, 0)
-    cpu_units        = optional(number, 1024)
+    cpu_units        = optional(number, 100)
     flags            = optional(list(string), [])
   })
   description = <<-EOT
-                    CPU configuration for the Virtual Machine. All values are optional.
+                    CPU configuration for the Virtual Machine. All values are optional. See section [10.2.5. CPU](https://pve.proxmox.com/pve-docs/pve-admin-guide.html#qm_cpu) of the [Proxmox VE Administration Guide](https://pve.proxmox.com/pve-docs/pve-admin-guide.html) for more details on these settings.
 
-                    architecture - CPU architecture: "aarch64" or "x86_64". Proxmox defaults to "x86_64". 
-                     Note: Requires root. Leave this set to null unless you need to change it. 
-                    sockets - The number of CPU sockets. Defaults to 1.
-                    cores - The number of CPU cores. Defaults to 1.
-                    hotplugged_vcpus - Number of hotplugged vcpus. Defaults to 0.
-                    cpu_limit - Limit of CPU usage. Defaults to 0 (no limit). NOTE: If the computer has 2 CPUs, it has total of '2' CPU time. Value '0' indicates no CPU limit.
-                    cpu_units - CPU weight for a VM. Argument is used in the kernel fair scheduler. The larger the number is, the more CPU time this VM gets. Number is relative to weights of all the other running VMs. Defaults to 1024.
-                    flags - List of flags (+/-) to set for the CPU. See [Proxmox cpu-models.conf](https://pve.proxmox.com/wiki/Manual:_cpu-models.conf) and the [Proxmox VE Administration Guide](https://pve.proxmox.com/pve-docs/pve-admin-guide.html#_cpu_type).
+                    - architecture - CPU architecture: "aarch64" or "x86_64". Proxmox defaults to "x86_64". 
+                      - Note: Requires root. Leave this set to null unless you need to change it.
+                    - type - (Optional) The emulated CPU type. Defaults to x86-64-v2-AES. See the [Proxmox VE Administration Guide - CPU Type](https://pve.proxmox.com/pve-docs/pve-admin-guide.html#_cpu_type) section for details.
+                    - sockets - The number of CPU sockets. Defaults to 1.
+                    - cores - The number of CPU cores. Defaults to 1.
+                    - hotplugged_vcpus - Number of hotplugged vcpus. Defaults to 0.
+                    - cpu_limit - Limit of CPU usage. Defaults to 0 (no limit). NOTE: If the computer has 2 CPUs, it has total of '2' CPU time. Value '0' indicates no CPU limit.
+                    - cpu_units - CPU weight for a VM. Argument is used in the kernel fair scheduler. The larger the number is, the more CPU time this VM gets. Number is relative to weights of all the other running VMs. Defaults to 100.
+                    - flags - List of flags (+/-) to set for the CPU. See [Proxmox cpu-models.conf](https://pve.proxmox.com/wiki/Manual:_cpu-models.conf) and the [Proxmox VE Administration Guide](https://pve.proxmox.com/pve-docs/pve-admin-guide.html#_cpu_type).
                   EOT
   default     = {}
   validation {
@@ -192,11 +193,9 @@ variable "memory" {
   description = <<-EOT
                     Memory configuration for the Virtual Machine. All values are optional.
 
-                    dedicated_mb - The dedicated memory in megabytes. Defaults to 512.
-                    
-                    floating_mb - The floating memory in megabytes. Defaults to 512. Setting `ballooning=true` will override whatever value is set to match the `dedicated_mb` value.
-                    
-                    ballooning_enabled - Allows VMs to dynamically change their memory usage by evicting unused memory during run time. Defaults to true. Setting this value to true will cause force the `floating_mb` value to match `dedicated_mb`.
+                    - dedicated_mb - The dedicated memory in megabytes. Defaults to 512.
+                    - floating_mb - The floating memory in megabytes. Defaults to 512. Setting `ballooning=true` will override whatever value is set to match the `dedicated_mb` value.
+                    - ballooning_enabled - Allows VMs to dynamically change their memory usage by evicting unused memory during run time. Defaults to true. Setting this value to true will cause force the `floating_mb` value to match `dedicated_mb`.
                   EOT
   default     = {}
   validation {
@@ -226,13 +225,13 @@ variable "operation_timeouts" {
   description = <<-EOT
                     Timeouts for various VM operations.
 
-                    clone - (Optional) Timeout for cloning a VM in seconds (defaults to 1800).
-                    create - (Optional) Timeout for creating a VM in seconds (defaults to 1800).
-                    migrate - (Optional) Timeout for migrating the VM (defaults to 1800).
-                    start - (Optional) Timeout for rebooting a VM in seconds (defaults to 1800).
-                    reboot - (Optional) Timeout for shutting down a VM in seconds ( defaults to 1800).
-                    shutdown - (Optional) Timeout for starting a VM in seconds (defaults to 1800).
-                    stop - (Optional) Timeout for stopping a VM in seconds (defaults to 300).
+                    - clone - (Optional) Timeout for cloning a VM in seconds (defaults to 1800).
+                    - create - (Optional) Timeout for creating a VM in seconds (defaults to 1800).
+                    - migrate - (Optional) Timeout for migrating the VM (defaults to 1800).
+                    - start - (Optional) Timeout for rebooting a VM in seconds (defaults to 1800).
+                    - reboot - (Optional) Timeout for shutting down a VM in seconds ( defaults to 1800).
+                    - shutdown - (Optional) Timeout for starting a VM in seconds (defaults to 1800).
+                    - stop - (Optional) Timeout for stopping a VM in seconds (defaults to 300).
                   EOT
   default     = {}
   validation {
@@ -365,6 +364,12 @@ variable "vga" {
     )
     error_message = "Invalid VGA type. Must be one of: cirrus, none, qxl, qxl2, qxl3, qxl4, serial0, serial1, serial2, serial3, std, virtio, virtio-gl, vmware."
   }
+}
+
+variable "boot_order" {
+  type        = list(string)
+  description = "(Optional) Specify a list of devices to boot from in the order they appear in the list (defaults to [])."
+  default     = []
 }
 
 variable "disks" {
@@ -852,7 +857,7 @@ variable "kvm_args" {
   type        = string
   description = <<-EOT
                   Arbitrary arguments passed to kvm, for example:
-                    args: -no-reboot -smbios 'type=0,vendor=FOO'
+                    - args: -no-reboot -smbios 'type=0,vendor=FOO'
 
                     NOTE: this option is for experts only.
                 EOT
@@ -879,12 +884,12 @@ variable "description" {
 
 variable "tags" {
   description = <<-EOT
-  (Optional) A list of tags for the VM. This is only metadata and does not affect VM functionality.
+                  (Optional) A list of tags for the VM. This is only metadata and does not affect VM functionality.
 
-  Notes:
-    - Defaults to an empty list.
-    - Proxmox always sorts VM tags. Tags will be sorted alphabetically to avoid the provider reporting differences caused to sorting.
-  EOT
+                  Notes:
+                    - Defaults to an empty list.
+                    - Proxmox always sorts VM tags. Tags will be sorted alphabetically to avoid the provider reporting differences caused to sorting.
+                EOT
 
   type    = list(string)
   default = []

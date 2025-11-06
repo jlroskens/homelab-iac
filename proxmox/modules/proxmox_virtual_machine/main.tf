@@ -78,6 +78,8 @@ resource "proxmox_virtual_environment_vm" "this" {
   }
 
   # Disk configuration
+  boot_order = var.boot_order
+
   dynamic "disk" {
     for_each = { for disk in var.disks : disk.interface => disk }
     content {
@@ -209,57 +211,53 @@ resource "proxmox_virtual_environment_vm" "this" {
 
   # Cloud-Init
   dynamic "initialization" {
-    for_each = var.cloud_init != null ? [var.cloud_init] : []
+    for_each = var.cloud_init == null ? [] : [1]
     content {
-      datastore_id = initialization.value.datastore_id
-      interface    = initialization.value.interface
+      datastore_id = var.cloud_init.datastore_id
+      interface    = var.cloud_init.interface
 
-      # --- DNS Configuration ---
       dynamic "dns" {
-        for_each = initialization.value.dns != null ? [initialization.value.dns] : []
+        for_each = var.cloud_init.dns == null ? [] : [1]
         content {
-          domain  = dns.value.domain
-          servers = dns.value.servers
+          domain  = var.cloud_init.dns.domain
+          servers = var.cloud_init.dns.servers
         }
       }
 
-      # --- IP Configuration (Multiple Blocks Supported) ---
       dynamic "ip_config" {
-        for_each = initialization.value.ip_config != null ? initialization.value.ip_config : []
+        for_each = var.cloud_init.ip_config == null ? [] : var.cloud_init.ip_config
         content {
           dynamic "ipv4" {
-            for_each = ip_config.value.ipv4 != null ? [ip_config.value.ipv4] : []
+            for_each = ip_config.value.ipv4 == null ? [] : [1]
             content {
-              address = ipv4.value.address
-              gateway = ipv4.value.gateway
+              address = ip_config.value.ipv4.address
+              gateway = ip_config.value.ipv4.gateway
             }
           }
 
           dynamic "ipv6" {
-            for_each = ip_config.value.ipv6 != null ? [ip_config.value.ipv6] : []
+            for_each = ip_config.value.ipv6 == null ? [] : [1]
             content {
-              address = ipv6.value.address
-              gateway = ipv6.value.gateway
+              address = ip_config.value.ipv6.address
+              gateway = ip_config.value.ipv6.gateway
             }
           }
         }
       }
 
-      # --- User Account Configuration ---
       dynamic "user_account" {
-        for_each = initialization.value.user_account != null ? [initialization.value.user_account] : []
+        for_each = var.cloud_init.user_account == null ? [] : [1]
         content {
-          username = user_account.value.username
-          password = user_account.value.password
-          keys     = user_account.value.keys
+          keys     = var.cloud_init.user_account.keys
+          password = var.cloud_init.user_account.password
+          username = var.cloud_init.user_account.username
         }
       }
 
-      # --- Optional Cloud-Init File IDs ---
-      network_data_file_id = initialization.value.network_data_file_id
-      user_data_file_id    = initialization.value.user_data_file_id
-      vendor_data_file_id  = initialization.value.vendor_data_file_id
-      meta_data_file_id    = initialization.value.meta_data_file_id
+      network_data_file_id = var.cloud_init.network_data_file_id
+      user_data_file_id    = var.cloud_init.user_data_file_id
+      vendor_data_file_id  = var.cloud_init.vendor_data_file_id
+      meta_data_file_id    = var.cloud_init.meta_data_file_id
     }
   }
 

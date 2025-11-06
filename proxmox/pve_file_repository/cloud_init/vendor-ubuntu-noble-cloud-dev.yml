@@ -43,5 +43,6 @@ runcmd:
   - systemctl enable --now qemu-guest-agent
   - systemctl reload ssh || systemctl restart ssh
   - go install github.com/mikefarah/yq/v4@latest
+  - curl -sL https://talos.dev/install | sh
   - mkdir -p /mnt/iac-state
   - echo "${nfs_server}:/export/iac-state    /mnt/iac-state/    nfs    defaults    0 0" >> /etc/fstab
