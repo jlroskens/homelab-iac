@@ -129,19 +129,20 @@ variable "cpu" {
     cores            = optional(number, 1)
     hotplugged_vcpus = optional(number, 0)
     cpu_limit        = optional(number, 0)
-    cpu_units        = optional(number, 1024)
+    cpu_units        = optional(number, 100)
     flags            = optional(list(string), [])
   })
   description = <<-EOT
-                    CPU configuration for the Virtual Machine. All values are optional.
+                    CPU configuration for the Virtual Machine. All values are optional. See section [10.2.5. CPU](https://pve.proxmox.com/pve-docs/pve-admin-guide.html#qm_cpu) of the [Proxmox VE Administration Guide](https://pve.proxmox.com/pve-docs/pve-admin-guide.html) for more details on these settings.
 
                     - architecture - CPU architecture: "aarch64" or "x86_64". Proxmox defaults to "x86_64". 
-                      - Note: Requires root. Leave this set to null unless you need to change it. 
+                      - Note: Requires root. Leave this set to null unless you need to change it.
+                    - type - (Optional) The emulated CPU type. Defaults to x86-64-v2-AES. See the [Proxmox VE Administration Guide - CPU Type](https://pve.proxmox.com/pve-docs/pve-admin-guide.html#_cpu_type) section for details.
                     - sockets - The number of CPU sockets. Defaults to 1.
                     - cores - The number of CPU cores. Defaults to 1.
                     - hotplugged_vcpus - Number of hotplugged vcpus. Defaults to 0.
                     - cpu_limit - Limit of CPU usage. Defaults to 0 (no limit). NOTE: If the computer has 2 CPUs, it has total of '2' CPU time. Value '0' indicates no CPU limit.
-                    - cpu_units - CPU weight for a VM. Argument is used in the kernel fair scheduler. The larger the number is, the more CPU time this VM gets. Number is relative to weights of all the other running VMs. Defaults to 1024.
+                    - cpu_units - CPU weight for a VM. Argument is used in the kernel fair scheduler. The larger the number is, the more CPU time this VM gets. Number is relative to weights of all the other running VMs. Defaults to 100.
                     - flags - List of flags (+/-) to set for the CPU. See [Proxmox cpu-models.conf](https://pve.proxmox.com/wiki/Manual:_cpu-models.conf) and the [Proxmox VE Administration Guide](https://pve.proxmox.com/pve-docs/pve-admin-guide.html#_cpu_type).
                   EOT
   default     = {}
@@ -366,9 +367,9 @@ variable "vga" {
 }
 
 variable "boot_order" {
-  type = list(string)
+  type        = list(string)
   description = "(Optional) Specify a list of devices to boot from in the order they appear in the list (defaults to [])."
-  default = []
+  default     = []
 }
 
 variable "disks" {

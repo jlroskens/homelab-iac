@@ -43,16 +43,26 @@ module "example_cloud_init_vm" {
   network_devices = [
     {
       bridge = "vmbr0"
+    },
+    {
+      bridge = "vmbr1"
     }
   ]
   cloud_init = {
     datastore_id = "local-lvm"
     interface    = "scsi1"
-    ip_config = [{
-      ipv4 = {
-        address = "dhcp"
+    ip_config = [
+      {
+        ipv4 = {
+          address = "dhcp"
+        }
+      },
+      {
+        ipv4 = {
+          address = "172.16.0.201/24"
+        }
       }
-    }]
+    ]
     vendor_data_file_id = proxmox_virtual_environment_file.vendor.id
     user_data_file_id   = proxmox_virtual_environment_file.user_data.id
   }

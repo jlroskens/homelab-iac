@@ -86,5 +86,5 @@ output "env_files" {
 
 output "raw_env_file_ids" {
   value = concat([for key, file in proxmox_virtual_environment_file.env_files_raw : file.id],
-                 [for key, file in proxmox_virtual_environment_file.env_files_raw_sensitive : file.id])
+  [for key, file in proxmox_virtual_environment_file.env_files_raw_sensitive : file.id])
 }
