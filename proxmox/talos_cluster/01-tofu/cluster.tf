@@ -65,12 +65,12 @@ locals {
   # Finally, if no static IP can be found then default to the VM's 'vm_name'
   nodes_address = { for vm in local.all_vms : vm.vm_id =>
     can(coalesce(var.talos_cluster.dns_domain_suffix, null)) ? "${vm.vm_name}${var.talos_cluster.dns_domain_suffix}"
-    : contains(keys(local.static_ip4s), vm.vm_id) ? local.static_ip4s[vm.vm_id][0] : vm.vm_name
+    : contains(keys(local.static_ip4s), tostring(vm.vm_id)) ? local.static_ip4s[vm.vm_id][0] : vm.vm_name
   }
   # Create a map containing each node's host/primary IP used to apply configurations indexed by each node's VM ID
   # Logic is similar to the above, but a static_ip is attempted first before using a hostname
   nodes_host_ip = { for vm in local.all_vms : vm.vm_id =>
-    contains(keys(local.static_ip4s), vm.vm_id) ? local.static_ip4s[vm.vm_id][0]
+    contains(keys(local.static_ip4s), tostring(vm.vm_id)) ? local.static_ip4s[vm.vm_id][0]
     : can(coalesce(var.talos_cluster.dns_domain_suffix, null)) ? "${vm.vm_name}${var.talos_cluster.dns_domain_suffix}" : vm.vm_name
   }
 
@@ -135,8 +135,6 @@ locals {
     [for k, address in local.nodes_address : address if contains(keys(local.control_plane_vms_map), k)],
     var.talos_cluster.api_cert_sans
   ))
-
-  client_config = talos_machine_configuration_apply.control_plane[local.template_vm_id].client_configuration
 }
 
 # Talos Machine Configuration Apply Resources for Control Plane Nodes
@@ -146,33 +144,32 @@ resource "talos_machine_configuration_apply" "control_plane" {
   client_configuration        = talos_machine_secrets.this.client_configuration
   machine_configuration_input = data.talos_machine_configuration.control_plane.machine_configuration
   node                        = local.nodes_host_ip[each.key]
-  config_patches = [
-    yamlencode({
-      machine = {
-        install = {
-          disk  = var.talos_cluster.install_disk
-          image = var.talos_cluster.machine_install_image
-        }
-        kubelet = {
-          nodeIP = {
-            validSubnets = local.kubelet_nodeip_subnets
+  config_patches = concat(
+      [yamlencode({
+        machine = {
+          install = {
+            disk  = var.talos_cluster.install_disk
+            image = var.talos_cluster.machine_install_image
           }
-          extraArgs = {
-            rotate-server-certificates = true
+          kubelet = {
+            nodeIP = {
+              validSubnets = local.kubelet_nodeip_subnets
+            }
+          }
+          certSANs = local.machine_cert_sans
+        }
+        cluster = {
+          apiServer = {
+            certSANs = local.api_cert_sans
+          }
+          etcd = {
+            advertisedSubnets = local.etcd_subnets
           }
         }
-        certSANs = local.machine_cert_sans
-      }
-      cluster = {
-        apiServer = {
-          certSANs = local.api_cert_sans
-        }
-        etcd = {
-          advertisedSubnets = local.etcd_subnets
-        }
-      }
-    })
-  ]
+      })
+    ],
+    local.control_plane_patches
+  )
   depends_on = [
     module.control_plane_vms
   ]
@@ -205,8 +202,10 @@ resource "talos_machine_configuration_apply" "worker" {
           nodeIP = {
             validSubnets = local.kubelet_nodeip_subnets
           }
-          extraArgs = {
+          # For https://github.com/siderolabs/talos-cloud-controller-manager
+          extraArgs = var.talos_cluster.talos_ccm_enabled == false ? {} : {
             rotate-server-certificates = true
+            # cloud-provider = "external"
           }
         }
         certSANs = local.machine_cert_sans

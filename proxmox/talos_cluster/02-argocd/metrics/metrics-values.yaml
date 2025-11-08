@@ -1,0 +1,6 @@
+replicas: 2
+
+apiService:
+  insecureSkipTLSVerify: false
+tls:
+  type: helm

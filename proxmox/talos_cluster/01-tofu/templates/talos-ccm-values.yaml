@@ -1,0 +1,11 @@
+# For single node clusters you may want to disable daemonSet and use replicaCount instead to have more than one instance running.
+daemonSet:
+  enabled: true
+# replicaCount: 2
+
+enabledControllers:
+  - node-csr-approval
+  # Only CSR Approval enabled. Other options
+  # - cloud-node
+  # - cloud-node-lifecycle
+  # - node-ipam-controller

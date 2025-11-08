@@ -12,6 +12,10 @@ terraform {
       source  = "siderolabs/talos"
       version = "~> 0.9"
     }
+    # kubernetes = {
+    #   source  = "hashicorp/kubernetes"
+    #   version = "~> 2.28"
+    # }
     corefunc = {
       source  = "northwood-labs/corefunc"
       version = "~> 2.1"

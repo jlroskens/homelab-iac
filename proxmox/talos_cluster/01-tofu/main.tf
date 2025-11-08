@@ -43,7 +43,7 @@ module "control_plane_vms" {
   }
 
   memory = {
-    dedicated_mb      = 2048
+    dedicated_mb      = 3072
     balooning_enabled = true
   }
 
@@ -68,8 +68,8 @@ module "control_plane_vms" {
 
 module "worker_vms" {
   for_each = { for vm in var.worker_vms : vm.vm_id => vm }
-  # source      = "github.com/jlroskens/homelab-iac/proxmox/modules/proxmox_virtual_machine?ref=v0"
-  source      = "../../proxmox/modules/proxmox_virtual_machine"
+  source      = "github.com/jlroskens/homelab-iac/proxmox/modules/proxmox_virtual_machine?ref=v0"
+  # source      = "../../proxmox/modules/proxmox_virtual_machine"
   vm_name     = each.value.vm_name
   vm_id       = each.value.vm_id
   node_name   = each.value.node_name
@@ -84,7 +84,7 @@ module "worker_vms" {
 
   cpu = {
     type      = "host"
-    cores     = 2
+    cores     = 3
     cpu_units = 800
   }
 
@@ -105,7 +105,7 @@ module "worker_vms" {
   }
 
   memory = {
-    dedicated_mb      = 8192
+    dedicated_mb      = 12288
     balooning_enabled = true
   }
 

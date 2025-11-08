@@ -55,6 +55,12 @@ variable "talos_cluster" {
     etcd_subnets              = optional(list(string), [])
     machine_cert_sans         = optional(list(string), [])
     api_cert_sans             = optional(list(string), [])
+    control_plane_patches     = optional(list(string), [])
+    talos_ccm_enabled         = optional(bool, true)
+    talos_ccm_manifest        = optional(string, ".env/talos-ccm-manifest.yml")
+    cilium_enabled            = optional(bool, false)
+    cilium_manifest_file      = optional(string, ".env/cilium-manifest.yml")
+
   })
   description = <<-EOT
 Talos cluster configuration settings.
@@ -71,7 +77,11 @@ Talos cluster configuration settings.
 - etcd_subnets: List of ip4 subnets for etcd advertisedSubnets. Same rules apply for this and etcd_subnet_ip_configs.
 - machine_cert_sans: List of IP addresses and hostnames to add as alternate subjects to the generated certificate(s) for each machine / VM.
 - api_cert_sans: List of IP addresses and hostnames to add as alternate subjects to the generated certificate(s) for the kubernetes API.
-
+- control_plane_patches: List of custom patch filenames to apply to control plane nodes.
+- talos_ccm_enabled: Enables installation of the node-csr-approval controller from the [Talos Cloud Controller Manager](https://github.com/siderolabs/talos-cloud-controller-manager/blob/main/README.md). Enables certificate renewal for your nodes. Required for metrics server. 
+- talos_ccm_manifest: Location of the manifest generated with the helm template command. Defaults to the name and directory location the `./templates/template-tccm.sh` script writes to.
+- cilium_enabled: Enables the replacement of the default flannel cni with cilium.
+- cilium_manifest_file: The location of the cilium manifest generated with the helm template command. Defaults to the name and directory location the `./templates/template-cilium.sh` script writes to.
 EOT
 }
 
