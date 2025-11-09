@@ -3,21 +3,29 @@
 ###       information. If you commit it to a git repo, make sure it is private.
 
 # Templates the cilium helm chart using the 'cilium-values.yaml' values file in this 
-# directory, saving the output values to an .env/cilium-manifest.yml file.
+# directory, saving the output values to an env/manifests/cilium-manifest.yml file.
 # If you plan on using cilium CNI, make sure to set 'talos_cluster.cilium_enabled=true' 
 # in your .env/{your_environment}.tfvars file after templating the charts.
 set -e
 
-declare -a ipam_annotation=()
-if [[ -z ${1+x} ]]; then
-    echo "No ingress IP provided. Ingress IP assignment will be dynamic (if ingress is enabled)."
-else
-    ipam_annotation=(--set ingressController.service.annotations."io\.cilium/lb-ipam-ips"="$1")
-fi
+# Commented in favor of using gateway API
+# declare -a ipam_annotation=()
+# if [[ -z ${1+x} ]]; then
+#     echo "No ingress IP provided. Ingress IP assignment will be dynamic (if ingress is enabled)."
+# else
+#     ipam_annotation=(--set ingressController.service.annotations."io\.cilium/lb-ipam-ips"="$1")
+# fi
+
+minify='false'
+for arg in "$@"; do
+  if [[ "${arg,,}" == "minify" ]]; then
+    minify='true'
+  fi
+done
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 TEMPLATE_VALUES="${SCRIPT_DIR}/cilium-values.yaml"
-OUPUT_MANIFEST="${SCRIPT_DIR}/../.env/manifests/cilium-manifest.yml"
+OUTPUT_MANIFEST="${SCRIPT_DIR}/../.env/manifests/cilium-manifest.yml"
 
 echo "### Adding Cilium Helm Repository ###"
 helm repo add cilium https://helm.cilium.io/
@@ -28,12 +36,20 @@ echo "### Creating Cilium Manifest ###"
 # the charts check to see if the CRDs are installed prior to adding it. But, that only works for helm install/upgrade not templating
 # since templating is client side.
 # See: https://github.com/cilium/cilium/issues/33239#issuecomment-2177949109
-helm template cilium cilium/cilium --version 1.18.3 \
-    "${ipam_annotation[@]}" \
+manifest=$(helm template cilium cilium/cilium --version 1.18.3 \
     --namespace kube-system -f "${TEMPLATE_VALUES}" \
-    --api-versions='gateway.networking.k8s.io/v1/GatewayClass' \
-    > "${OUPUT_MANIFEST}"
+    --api-versions='gateway.networking.k8s.io/v1/GatewayClass')
+    # "${ipam_annotation[@]}"
+
+if [[ "$minify" == 'true' ]]; then
+    echo " **Minifying output manifest with yq**"
+    yq '... comments=""' <<< "$manifest" > "$OUTPUT_MANIFEST" 
+else
+    echo "$manifest" > "$OUTPUT_MANIFEST" 
+fi
+
+    
 echo ""
 echo "### Templating Complete ###"
-echo "Manifest file saved to: $(realpath "${OUPUT_MANIFEST}")."
+echo "Manifest file saved to: $(realpath "${OUTPUT_MANIFEST}")."
 echo "Make sure to enable the 'talos_cluster.cilium_enabled' setting in your tfvars file to enable cilium as your cluster's CNI."

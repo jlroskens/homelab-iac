@@ -1,6 +1,0 @@
-- op: replace
-  path: /spec/acme/email
-  value: "user@example.com"
-- op: replace
-  path: /spec/acme/server
-  value: "https://acme-staging-v02.api.letsencrypt.org/directory"

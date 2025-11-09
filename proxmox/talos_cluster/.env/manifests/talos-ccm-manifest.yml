@@ -1,5 +1,3 @@
----
-# Source: talos-cloud-controller-manager/templates/serviceaccount.yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -12,7 +10,6 @@ metadata:
     app.kubernetes.io/managed-by: Helm
   namespace: kube-system
 ---
-# Source: talos-cloud-controller-manager/templates/serviceaccount.yaml
 apiVersion: talos.dev/v1alpha1
 kind: ServiceAccount
 metadata:
@@ -28,7 +25,6 @@ spec:
   roles:
     - os:reader
 ---
-# Source: talos-cloud-controller-manager/templates/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -44,7 +40,6 @@ data:
   ccm-config.yaml: |
     global:
 ---
-# Source: talos-cloud-controller-manager/templates/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -56,74 +51,73 @@ metadata:
     app.kubernetes.io/version: "v1.11.0"
     app.kubernetes.io/managed-by: Helm
 rules:
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - get
-  - create
-  - update
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - create
-  - patch
-  - update
-- apiGroups:
-  - ""
-  resources:
-  - nodes
-  verbs:
-  - get
-  - list
-  - watch
-  - update
-  - patch
-- apiGroups:
-  - ""
-  resources:
-  - nodes/status
-  verbs:
-  - patch
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - create
-  - get
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts/token
-  verbs:
-  - create
-- apiGroups:
-  - certificates.k8s.io
-  resources:
-  - certificatesigningrequests
-  verbs:
-  - list
-  - watch
-- apiGroups:
-  - certificates.k8s.io
-  resources:
-  - certificatesigningrequests/approval
-  verbs:
-  - update
-- apiGroups:
-  - certificates.k8s.io
-  resources:
-  - signers
-  resourceNames:
-  - kubernetes.io/kubelet-serving
-  verbs:
-  - approve
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - create
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+      - list
+      - watch
+      - update
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes/status
+    verbs:
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - serviceaccounts
+    verbs:
+      - create
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - serviceaccounts/token
+    verbs:
+      - create
+  - apiGroups:
+      - certificates.k8s.io
+    resources:
+      - certificatesigningrequests
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - certificates.k8s.io
+    resources:
+      - certificatesigningrequests/approval
+    verbs:
+      - update
+  - apiGroups:
+      - certificates.k8s.io
+    resources:
+      - signers
+    resourceNames:
+      - kubernetes.io/kubelet-serving
+    verbs:
+      - approve
 ---
-# Source: talos-cloud-controller-manager/templates/rolebinding.yaml
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -133,11 +127,10 @@ roleRef:
   kind: ClusterRole
   name: system:talos-cloud-controller-manager
 subjects:
-- kind: ServiceAccount
-  name: talos-cloud-controller-manager
-  namespace: kube-system
+  - kind: ServiceAccount
+    name: talos-cloud-controller-manager
+    namespace: kube-system
 ---
-# Source: talos-cloud-controller-manager/templates/rolebinding.yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -152,7 +145,6 @@ subjects:
     name: talos-cloud-controller-manager
     namespace: kube-system
 ---
-# Source: talos-cloud-controller-manager/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -173,10 +165,9 @@ spec:
       targetPort: 50258
       protocol: TCP
   selector:
-        app.kubernetes.io/name: talos-cloud-controller-manager
-        app.kubernetes.io/instance: talos-cloud-controller-manager
+    app.kubernetes.io/name: talos-cloud-controller-manager
+    app.kubernetes.io/instance: talos-cloud-controller-manager
 ---
-# Source: talos-cloud-controller-manager/templates/deployment.yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -217,7 +208,7 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop:
-              - ALL
+                - ALL
             seccompProfile:
               type: RuntimeDefault
           image: "ghcr.io/siderolabs/talos-cloud-controller-manager:v1.11.0"
@@ -286,8 +277,8 @@ spec:
         - name: cloud-config
           configMap:
             name: talos-cloud-controller-manager
-            defaultMode: 416 # 0640
+            defaultMode: 416
         - name: talos-secrets
           secret:
             secretName: talos-cloud-controller-manager-talos-secrets
-            defaultMode: 416 # 0640
+            defaultMode: 416

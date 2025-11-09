@@ -67,6 +67,8 @@ variable "talos_cluster" {
       cidr_block = optional(string, "")
     }))
     cilium_tlsroute_enabled  = optional(bool, false)
+    argocd_enabled           = optional(bool, false)
+    argocd_manifest_file     = optional(string, ".env/manifests/argocd-manifest.yml")
   })
   description = <<-EOT
 Talos cluster configuration settings.
@@ -85,15 +87,17 @@ Talos cluster configuration settings.
 - api_cert_sans: List of IP addresses and hostnames to add as alternate subjects to the generated certificate(s) for the kubernetes API.
 - control_plane_patches: List of custom patch filenames to apply to control plane nodes.
 - talos_ccm_enabled: Enables installation of the node-csr-approval controller from the [Talos Cloud Controller Manager](https://github.com/siderolabs/talos-cloud-controller-manager/blob/main/README.md). Enables certificate renewal for your nodes. Required for metrics server. 
-- talos_ccm_manifest: Location of the manifest generated with the helm template command. Defaults to the name and directory location the `./templates/template-tccm.sh` script writes to.
+- talos_ccm_manifest: Location of the manifest generated with the helm template command. Defaults to the name and directory location the `./manifest-generators/template-tccm.sh` script writes to.
 - cilium_enabled: Enables the replacement of the default flannel cni with cilium.
 - cilium_version: Cilium version. Defaults to v1.4.0.
-- cilium_manifest_file: The location of the cilium manifest generated with the helm template command. Defaults to the name and directory location the `./templates/template-cilium.sh` script writes to.
+- cilium_manifest_file: The location of the cilium manifest generated with the helm template command. Defaults to the name and directory location the `./manifest-generators/template-cilium.sh` script writes to.
 - cilium_ip_pool: Defines the IP pool for IP address assignment for external load balancers / gateways.
   - start_ip: The start of the IP address range to assign from.
   - end_ip: The last IP address assignable.
   - cidr_block: The cidr_block in which to assign IP addresses from.
 - cilium_tlsroute_enabled: Enables install of experimental TLSRoute CRDs.
+- argocd_enabled: Enables installation of the [ArgoCD](https://argo-cd.readthedocs.io/en/stable/).
+- argocd_manifest: Location of the ArgoCD manifest. Defaults to the name and directory location the `./manifest-generators/kustomize-argocd.sh` script writes to.
 EOT
 }
 

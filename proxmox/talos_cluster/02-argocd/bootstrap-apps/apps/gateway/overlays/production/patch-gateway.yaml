@@ -1,6 +1,0 @@
-- op: replace
-  path: /spec/addresses/0/value
-  value: "192.168.0.130"
-- op: replace
-  path: /spec/listeners/0/hostname
-  value: "argocd.local.example.com"

@@ -27,6 +27,12 @@ talos_cluster = {
   cilium_enabled = true
   talos_ccm_enabled = true
   control_plane_patches = [".env/example.ipam-announce-patch.yml"]
+  cilium_ip_pool = {
+    start_ip = "192.168.12.130"
+    end_ip = "192.168.12.149"
+  }
+  cilium_tlsroute_enabled = true
+  argocd_enabled = true
 }
 
 joined_worker_ids = []

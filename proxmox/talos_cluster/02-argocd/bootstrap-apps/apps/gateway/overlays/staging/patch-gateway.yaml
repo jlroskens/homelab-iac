@@ -1,9 +1,0 @@
-- op: replace
-  path: /metadata/annotations/cert-manager.io~1issuer
-  value: staging-cloudflare-dns-issuer
-- op: replace
-  path: /spec/addresses/0/value
-  value: "192.168.0.131"
-- op: replace
-  path: /spec/listeners/0/hostname
-  value: "staging.argocd.local.example.com"
