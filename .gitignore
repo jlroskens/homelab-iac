@@ -8,6 +8,7 @@
 **/env/*
 !**/env/example.*
 !example.*
+!gitignore
 
 # Ignore VSCode
 .vscode
