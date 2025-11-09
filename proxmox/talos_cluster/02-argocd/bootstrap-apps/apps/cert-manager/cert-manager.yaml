@@ -4,7 +4,7 @@ metadata:
   name: cert-manager
   namespace: argocd
 spec:
-  project: default
+  project: core
   source:
     chart: cert-manager
     repoURL: quay.io/jetstack/charts

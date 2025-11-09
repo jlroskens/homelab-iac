@@ -58,7 +58,14 @@ argocd app create bootstrap-apps \
     --repo https://github.com/jlroskens/homelab-iac.git \
     --revision feature/talos-bootstrapping \
     --path proxmox/talos_cluster/02-argocd/bootstrap-apps
-argocd app sync bootstrap-apps
+
+argocd app create core-apps \
+    --dest-namespace argocd \
+    --dest-server https://kubernetes.default.svc --project core \
+    --repo https://github.com/jlroskens/homelab-iac.git \
+    --revision feature/talos-bootstrapping \
+    --path proxmox/talos_cluster/02-argocd/bootstrap-app
+argocd app sync core-apps
 
 echo "### Connection Instructions ###"
 echo "-------------------------------"
