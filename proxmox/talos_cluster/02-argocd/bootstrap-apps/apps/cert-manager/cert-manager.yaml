@@ -10,8 +10,22 @@ spec:
     repoURL: quay.io/jetstack/charts
     targetRevision: v1.19.1
     helm:
-      valueFiles:
-      - values.yaml
+      values: |
+        config:
+          spec:
+            destination:
+              server: https://kubernetes.default.svc
+            source:
+              repoURL: https://github.com/jlroskens/homelab-iac
+              targetRevision: feature/talos-bootstrapping
+
+        applications:
+          - name: cert-manager
+            path: proxmox/talos_cluster/02-argocd/bootstrap-apps/apps/cert-manager
+          - name: staging-gateway
+            path: proxmox/talos_cluster/02-argocd/bootstrap-apps/apps/gateway/overlays/staging.rnimbus.com
+          - name: staging-argocd-routes
+            path: proxmox/talos_cluster/02-argocd/bootstrap-apps/apps/argocd-routes/overlays/staging.rnimbus.com
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager
