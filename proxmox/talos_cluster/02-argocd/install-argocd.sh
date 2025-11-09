@@ -37,8 +37,29 @@ kubectl wait deployment/argocd-server --for condition=available --timeout=180s -
 # # kubectl apply -f argocd-ingress.yaml
 # kubectl apply -f argocd-gateway.yaml
 # echo ""
-echo "### Installation Complete ###"
+
+echo "### ArgoCD Installation Complete ###"
 echo ""
+echo "### Bootstrapping Apps ###"
+# Extract the initial password from the secret
+export ARGO_PASSWORD="$(kubectl -n $ARGOCD_NAMESPACE get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)"
+
+# Setup port forwarding and a trap to kill it when we exit
+kubectl -n argocd port-forward svc/argocd-server 8080:80 &
+_port_forward_pid=$!
+trap "kill $_port_forward_pid" SIGINT SIGTERM EXIT
+# Login on the local port we just forwarded to
+argocd login --skip-test-tls --plaintext --username admin --skip-test-tls --password "$ARGO_PASSWORD" localhost:8080
+
+# Create our App of Apps
+argocd app create apps \
+    --dest-namespace argocd \
+    --dest-server https://kubernetes.default.svc \
+    --repo https://github.com/jlroskens/homelab-iac.git \
+    --revision feature/talos-bootstrapping \
+    --path proxmox/talos_cluster/02-argocd/bootstrap-apps
+argocd app sync apps
+
 echo "### Connection Instructions ###"
 echo "-------------------------------"
 
