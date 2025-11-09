@@ -62,7 +62,11 @@ proxmox/talos_cluster/
 ├── provider.tf                # Provider configurations
 ├── patches.tf                 # Patches for Talos configuration
 ├── .env/
-│   └── example.tfvars         # Example configuration
+│   ├── example.tfvars         # Example configuration
+│   ├── rnimbus.tfvars         # Production configuration
+│   └── manifests/             # Generated manifests (git-ignored)
+│       ├── argocd-manifest.yml # Generated ArgoCD manifest
+│       └── talos-ccm-manifest.yml # Generated Talos CCM manifest
 └── manifest-generators/
     ├── cilium-values.yaml     # Cilium CNI configuration values
     ├── talos-ccm-values.yaml  # Talos Cloud Controller Manager values
