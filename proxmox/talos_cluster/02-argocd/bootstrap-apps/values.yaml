@@ -5,6 +5,7 @@ config:
     source:
       repoURL: https://github.com/jlroskens/homelab-iac
       targetRevision: feature/talos-bootstrapping
+    project: core
 
 applications:
   - name: cert-manager
