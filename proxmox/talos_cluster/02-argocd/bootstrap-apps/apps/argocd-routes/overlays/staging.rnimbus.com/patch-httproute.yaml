@@ -1,6 +1,9 @@
 - op: replace
+  path: /spec/parentRefs/0/name
+  value: staging-cluster-gateway
+- op: replace
   path: /spec/parentRefs/0/namespace
-  value: staging-argocd
+  value: staging-gateway
 - op: replace
   path: /spec/hostnames/0
   value: "staging.argocd.local.rnimbus.com"

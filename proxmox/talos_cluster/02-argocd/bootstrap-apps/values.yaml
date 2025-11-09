@@ -13,3 +13,5 @@ applications:
     path: proxmox/talos_cluster/02-argocd/bootstrap-apps/apps/gateway/overlays/staging.rnimbus.com
   - name: staging-argocd-routes
     path: proxmox/talos_cluster/02-argocd/bootstrap-apps/apps/argocd-routes/overlays/staging.rnimbus.com
+    destination:
+      namespace: argocd

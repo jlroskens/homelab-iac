@@ -4,7 +4,7 @@ metadata:
   name: cluster-gateway
   namespace: gateway
   annotations:
-    cert-manager.io/issuer: cloudflare-issuer
+    cert-manager.io/issuer: cloudflare-dns-issuer
 spec:
   gatewayClassName: cilium
   addresses:
@@ -21,6 +21,6 @@ spec:
       tls:
         mode: Terminate
         certificateRefs:
-          - name: argocd-tls
+          - name: argo-tls
             kind: Secret  
             group: ""

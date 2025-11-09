@@ -9,7 +9,7 @@ patches:
       group: "cert-manager.io"
       version: v1
       kind: Issuer
-      name: cloudflare-issuer
+      name: cloudflare-dns-issuer
     path: patch-cert-issuer.yaml
   - target:
       group: "gateway.networking.k8s.io"
