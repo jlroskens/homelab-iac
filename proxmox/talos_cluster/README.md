@@ -118,7 +118,7 @@ The module automatically configures certificates with:
 ### Provider Configuration
 
 - [`pve_endpoint`](proxmox/talos_cluster/variables.tf:2): Proxmox VE API endpoint URL
-- [`tofu_state_path`](proxmox/talos_cluster/variables.tf:7): Local path for tofu state file
+- [`terraform_state_path`](proxmox/talos_cluster/variables.tf:7): Local path for tofu state file
 
 ### ISO Configuration
 
