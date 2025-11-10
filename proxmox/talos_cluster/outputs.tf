@@ -62,6 +62,34 @@ output "talos_client_config" {
   sensitive = true
 }
 
+resource "talos_cluster_kubeconfig" "this" {
+  depends_on = [
+    talos_machine_bootstrap.this
+  ]
+  client_configuration = talos_machine_secrets.this.client_configuration
+  node                 = local.cluster_node_endpoint
+}
+
+output "talos_cluster_kubeconfig" {
+  value     = talos_cluster_kubeconfig.this
+  sensitive = true
+}
+output "kubeconfig" {
+  value     = talos_cluster_kubeconfig.this.kubeconfig_raw
+  sensitive = true
+}
+
+output "kubeconfig_client_certificate" {
+  value     = talos_cluster_kubeconfig.this.kubernetes_client_configuration.client_certificate
+}
+output "kubeconfig_client_key" {
+  value     = talos_cluster_kubeconfig.this.kubernetes_client_configuration.client_key
+  sensitive = true
+}
+output "kubeconfig_ca_certificate" {
+  value     = talos_cluster_kubeconfig.this.kubernetes_client_configuration.ca_certificate
+}
+
 output "talos_config_instructions" {
   value = <<-EOT
               To configure your talos config and kubeconfig files:
