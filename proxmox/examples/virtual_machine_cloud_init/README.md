@@ -18,7 +18,7 @@
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_example_cloud_init_vm"></a> [example\_cloud\_init\_vm](#module\_example\_cloud\_init\_vm) | github.com/jlroskens/homelab-iac/proxmox/modules/proxmox_virtual_machine | v1 |
+| <a name="module_example_cloud_init_vm"></a> [example\_cloud\_init\_vm](#module\_example\_cloud\_init\_vm) | github.com/rNimbus-com/homelab-iac/proxmox/modules/proxmox_virtual_machine | v1 |
 
 ## Resources
 

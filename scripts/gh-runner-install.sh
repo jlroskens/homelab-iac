@@ -4,7 +4,7 @@
 # - Token from https://github.com/${repo_path}/settings/actions/runners/new
 # - NonInteractive.
 # SSH Example:
-# ssh githubrunner1.local.example.com 'bash -s' -- < ./gh-runner-install.sh "jlroskens/homelab-foundation" "efsdfsdf213412dw" "self-hosted,homelab-ubuntu"
+# ssh githubrunner1.local.example.com 'bash -s' -- < ./gh-runner-install.sh "rNimbus-com/homelab-foundation" "efsdfsdf213412dw" "self-hosted,homelab-ubuntu"
 
 set -e
 

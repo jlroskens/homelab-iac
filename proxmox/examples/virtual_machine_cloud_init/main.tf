@@ -9,7 +9,7 @@ resource "proxmox_virtual_environment_download_file" "ubuntu_noble" {
 }
 
 module "example_cloud_init_vm" {
-  source      = "github.com/jlroskens/homelab-iac/proxmox/modules/proxmox_virtual_machine?ref=v0"
+  source      = "github.com/rNimbus-com/homelab-iac/proxmox/modules/proxmox_virtual_machine?ref=v0"
   vm_name     = "vm-example-ubuntu-noble-cloudinit"
   vm_id       = 1002
   node_name   = "pve-host-01"

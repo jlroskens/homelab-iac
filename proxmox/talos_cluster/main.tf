@@ -7,7 +7,7 @@ data "proxmox_virtual_environment_file" "iso" {
 
 module "control_plane_vms" {
   for_each    = { for vm in var.control_plane_vms : vm.vm_id => vm }
-  source      = "github.com/jlroskens/homelab-iac/proxmox/modules/proxmox_virtual_machine?ref=v0"
+  source      = "github.com/rNimbus-com/homelab-iac/proxmox/modules/proxmox_virtual_machine?ref=v0"
   vm_name     = each.value.vm_name
   vm_id       = each.value.vm_id
   node_name   = each.value.node_name
@@ -68,7 +68,7 @@ module "control_plane_vms" {
 
 module "worker_vms" {
   for_each = { for vm in var.worker_vms : vm.vm_id => vm }
-  source   = "github.com/jlroskens/homelab-iac/proxmox/modules/proxmox_virtual_machine?ref=v0"
+  source   = "github.com/rNimbus-com/homelab-iac/proxmox/modules/proxmox_virtual_machine?ref=v0"
   # source      = "../../proxmox/modules/proxmox_virtual_machine"
   vm_name     = each.value.vm_name
   vm_id       = each.value.vm_id

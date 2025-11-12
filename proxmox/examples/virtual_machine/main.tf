@@ -32,7 +32,7 @@ resource "tls_private_key" "default_account" {
 
 # Create the VM on the 
 module "example_vm" {
-  source      = "github.com/jlroskens/homelab-iac/proxmox/modules/proxmox_virtual_machine?ref=v0"
+  source      = "github.com/rNimbus-com/homelab-iac/proxmox/modules/proxmox_virtual_machine?ref=v0"
   vm_name     = "vm-example-ubuntu-nobel"
   vm_id       = 1001
   node_name   = "pve-host-01"
