@@ -113,6 +113,8 @@ variable "control_plane_vms" {
     vm_name     = string
     vm_id       = number
     node_name   = string
+    cpu_cores   = optional(number, 2)
+    memory_mb   = optional(number, 2048)
     description = optional(string, "Talos control plane node")
 
     cloud_init_ip_config = list(object({
@@ -135,6 +137,8 @@ Each control plane VM object supports the following parameters:
 - vm_name: (Required) The name of the virtual machine. This name will be used for cluster identification and DNS resolution.
 - vm_id: (Required) Unique ID of the Virtual Machine. Must be a value between 100 and 999,999,999 and unique across the entire Proxmox cluster.
 - node_name: (Required) The name of the Proxmox node to assign the virtual machine to.
+- cpu_cores: (Optional) The amount of vCPU / cores to assign to the the control plane VM.
+- memory_mb: (Optional) The amount of memory (in MB) to assign to the the control plane VM.
 - description: (Optional) Description for the virtual machine. Defaults to "Talos control plane node".
 - cloud_init_ip_config: (Required) List of IP configurations for cloud-init network setup.
   - ipv4: (Optional) IPv4 configuration object.
@@ -154,6 +158,8 @@ variable "worker_vms" {
     vm_name     = string
     vm_id       = number
     node_name   = string
+    cpu_cores   = optional(number, 2)
+    memory_mb   = optional(number, 2048)
     description = optional(string, "Talos worker")
 
     cloud_init_ip_config = list(object({
@@ -176,6 +182,8 @@ Each worker VM object supports the following parameters:
 - vm_name: (Required) The name of the virtual machine. This name will be used for cluster identification and DNS resolution.
 - vm_id: (Required) Unique ID of the Virtual Machine. Must be a value between 100 and 999,999,999 and unique across the entire Proxmox cluster.
 - node_name: (Required) The name of the Proxmox node to assign the virtual machine to.
+- cpu_cores: (Optional) The amount of vCPU / cores to assign to the the worker VM.
+- memory_mb: (Optional) The amount of memory (in MB) to assign to the the worker VM.
 - description: (Optional) Description for the virtual machine. Defaults to "Talos worker".
 - cloud_init_ip_config: (Required) List of IP configurations for cloud-init network setup.
   - ipv4: (Optional) IPv4 configuration object.
