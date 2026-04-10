@@ -37,7 +37,7 @@ variable "iso_content_type" {
 variable "iso_file_name" {
   type        = string
   description = "The name of the ISO file"
-  default     = "talos-v1.12.4-nocloud-amd64-secureboot.iso"
+  default     = "talos-v1.12.6-nocloud-amd64-secureboot.iso"
 }
 
 variable "talos_version" {
@@ -62,6 +62,7 @@ variable "talos_cluster" {
     machine_cert_sans         = optional(list(string), [])
     api_cert_sans             = optional(list(string), [])
     control_plane_patches     = optional(list(string), [])
+    node_patches              = optional(list(string), [])
     talos_ccm_enabled         = optional(bool, true)
     talos_ccm_manifest        = optional(string, ".env/manifests/talos-ccm-manifest.yml")
     proxmox_ccm_enabled       = optional(bool, true)
@@ -97,6 +98,7 @@ Talos cluster configuration settings.
 - machine_cert_sans: List of IP addresses and hostnames to add as alternate subjects to the generated certificate(s) for each machine / VM.
 - api_cert_sans: List of IP addresses and hostnames to add as alternate subjects to the generated certificate(s) for the kubernetes API.
 - control_plane_patches: List of custom patch filenames to apply to control plane nodes.
+- node_patches: List of custom patch filenames to apply to all cluster nodes.
 - talos_ccm_enabled: Enables installation of the node-csr-approval controller from the [Talos Cloud Controller Manager](https://github.com/siderolabs/talos-cloud-controller-manager/blob/main/README.md). Enables certificate renewal for your nodes. Required for metrics server. 
 - talos_ccm_manifest: Location of the manifest generated with the helm template command. Defaults to the name and directory location the `./manifest-generators/template-tccm.sh` script writes to.
 - proxmox_ccm_enabled: Enables installation of the cloud controller manager from [Proxmox Cloud Controller Manager](https://github.com/sergelogvinov/proxmox-cloud-controller-manager/blob/main/docs/install.md).

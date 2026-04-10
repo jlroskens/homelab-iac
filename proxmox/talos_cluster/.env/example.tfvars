@@ -7,9 +7,9 @@ terraform_state_path=".terraform/talos_virtual_machines_cluster_example.tfstate"
 iso_node_name    = "pve-host-01"
 iso_datastore_id = "shared-vz"
 iso_content_type = "iso"
-iso_file_name    = "talos-v1.12.4-nocloud-amd64-secureboot.iso"
+iso_file_name    = "talos-v1.12.6-nocloud-amd64-secureboot.iso"
 
-talos_version = "1.12.4"
+talos_version = "1.12.6"
 
 # Talos cluster configuration
 talos_cluster = {
@@ -18,7 +18,7 @@ talos_cluster = {
   talos_cluster = "myregion"
   control_plane_vm_id = 101
   dns_domain_suffix = ".cluster.local.example.com"
-  machine_install_image = "factory.talos.dev/nocloud-installer-secureboot/aeec243e3a4c2a14f9ba74b1a8c7662f03eea658a7ea5f1c26fdd491280c88f8:v1.12.4"
+  machine_install_image = "factory.talos.dev/nocloud-installer-secureboot/aeec243e3a4c2a14f9ba74b1a8c7662f03eea658a7ea5f1c26fdd491280c88f8:v1.12.6"
   install_disk = "/dev/vda"
   kubelet_subnet_ip_configs = [1]
   etcd_subnet_ip_configs = [1]

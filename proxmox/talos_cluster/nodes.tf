@@ -73,7 +73,7 @@ module "control_plane_vms" {
 
   memory = {
     dedicated_mb      = each.value.memory_mb
-    balooning_enabled = true
+    ballooning_enabled = true
   }
 
   efi_disk = {
@@ -145,7 +145,7 @@ module "worker_vms" {
 
   memory = {
     dedicated_mb      = each.value.memory_mb
-    balooning_enabled = true
+    ballooning_enabled = true
   }
 
   efi_disk = {

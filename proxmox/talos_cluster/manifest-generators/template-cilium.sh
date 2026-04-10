@@ -36,7 +36,7 @@ echo "### Creating Cilium Manifest ###"
 # the charts check to see if the CRDs are installed prior to adding it. But, that only works for helm install/upgrade not templating
 # since templating is client side.
 # See: https://github.com/cilium/cilium/issues/33239#issuecomment-2177949109
-manifest=$(helm template cilium cilium/cilium --version 1.18.3 \
+manifest=$(helm template cilium cilium/cilium --version 1.19.2 \
     --namespace kube-system -f "${TEMPLATE_VALUES}" \
     --api-versions='gateway.networking.k8s.io/v1/GatewayClass')
     # "${ipam_annotation[@]}"
