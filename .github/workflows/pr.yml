@@ -1,0 +1,15 @@
+name: ➡️ Pull Request
+
+on:
+  - pull_request
+
+permissions:
+  id-token: write
+  contents: write
+  actions: read
+jobs:
+  pull-request:
+    name: Pull Request
+    uses: rNimbus-com/ci-workflows/.github/workflows/pr-tofu.yml@v1
+    with:
+      working-dir: examples/virtual_machine,examples/virtual_machine_cloud_init,modules/proxmox_virtual_machine,net_boot_vm,pve_env_config,pve_file_repository,talos_cluster
