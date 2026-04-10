@@ -52,8 +52,8 @@ Note: Before applying, make sure to update sensitive values like SSH keys and pa
 
 | Name | Version |
 |------|---------|
-| <a name="provider_local"></a> [local](#provider\_local) | 2.5.3 |
-| <a name="provider_proxmox"></a> [proxmox](#provider\_proxmox) | 0.86.0 |
+| <a name="provider_local"></a> [local](#provider\_local) | ~> 2.4 |
+| <a name="provider_proxmox"></a> [proxmox](#provider\_proxmox) | ~> 0.86 |
 
 ## Modules
 
@@ -85,6 +85,5 @@ No modules.
 | Name | Description |
 |------|-------------|
 | <a name="output_env_files"></a> [env\_files](#output\_env\_files) | n/a |
-| <a name="output_raw_env_files"></a> [raw\_env\_files](#output\_raw\_env\_files) | n/a |
-| <a name="output_raw_env_files_sensitive"></a> [raw\_env\_files\_sensitive](#output\_raw\_env\_files\_sensitive) | n/a |
+| <a name="output_raw_env_file_ids"></a> [raw\_env\_file\_ids](#output\_raw\_env\_file\_ids) | n/a |
 <!-- END_TF_DOCS -->

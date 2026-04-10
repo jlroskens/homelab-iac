@@ -152,10 +152,10 @@ locals {
   ]
   # Load Custom patches from file, if any were provided
   custom_control_plane_patches = [for f in var.talos_cluster.control_plane_patches : file(f)]
-  
+
   # Load custom patches that get applied to all nodes
   node_patches = [for f in var.talos_cluster.node_patches : file(f)]
-  
+
   # Merge control pane patches into a single list.
   control_plane_patches = concat(
     local.proxmox_ccm_secrets_patch,
