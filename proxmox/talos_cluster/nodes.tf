@@ -50,7 +50,7 @@ module "control_plane_vms" {
     cpu_units = 900
   }
 
-  startup_order = 1
+  startup_order         = 1
   next_vm_startup_delay = 60
 
   # Boot from virtio0 disk then CD-ROM
@@ -72,8 +72,8 @@ module "control_plane_vms" {
   }
 
   memory = {
-    dedicated_mb      = each.value.memory_mb
-    balooning_enabled = true
+    dedicated_mb       = each.value.memory_mb
+    ballooning_enabled = true
   }
 
   efi_disk = {
@@ -144,8 +144,8 @@ module "worker_vms" {
   }
 
   memory = {
-    dedicated_mb      = each.value.memory_mb
-    balooning_enabled = true
+    dedicated_mb       = each.value.memory_mb
+    ballooning_enabled = true
   }
 
   efi_disk = {

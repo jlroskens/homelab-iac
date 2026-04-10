@@ -1,9 +1,15 @@
-version: 1.18.3
+version: 1.19.2
 
 ipam:
   mode: kubernetes
 
 kubeProxyReplacement: true
+
+bpf:
+  masquerade: true
+
+socketLB:
+  hostNamespaceOnly: true
 
 securityContext:
   capabilities:
