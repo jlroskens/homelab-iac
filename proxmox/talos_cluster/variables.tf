@@ -64,22 +64,7 @@ variable "talos_cluster" {
     control_plane_patches     = optional(list(string), [])
     node_patches              = optional(list(string), [])
     talos_ccm_enabled         = optional(bool, true)
-    talos_ccm_manifest        = optional(string, ".env/manifests/talos-ccm-manifest.yml")
-    proxmox_ccm_enabled       = optional(bool, true)
-    proxmox_ccm_manifest      = optional(string, ".env/manifests/proxmox-ccm-manifest.yml")
-    proxmox_csi_enabled       = optional(bool, true)
-    proxmox_csi_manifest      = optional(string, ".env/manifests/proxmox-csi-manifest.yml")
     cilium_enabled            = optional(bool, false)
-    cilium_version            = optional(string, "v1.4.0")
-    cilium_manifest_file      = optional(string, ".env/manifests/cilium-manifest.yml")
-    cilium_ip_pool = optional(object({
-      start_ip   = optional(string, ""),
-      end_ip     = optional(string, ""),
-      cidr_block = optional(string, "")
-    }))
-    cilium_tlsroute_enabled = optional(bool, false)
-    argocd_enabled          = optional(bool, false)
-    argocd_manifest_file    = optional(string, ".env/manifests/argocd-manifest.yml")
   })
   description = <<-EOT
 Talos cluster configuration settings.
@@ -100,21 +85,7 @@ Talos cluster configuration settings.
 - control_plane_patches: List of custom patch filenames to apply to control plane nodes.
 - node_patches: List of custom patch filenames to apply to all cluster nodes.
 - talos_ccm_enabled: Enables installation of the node-csr-approval controller from the [Talos Cloud Controller Manager](https://github.com/siderolabs/talos-cloud-controller-manager/blob/main/README.md). Enables certificate renewal for your nodes. Required for metrics server. 
-- talos_ccm_manifest: Location of the manifest generated with the helm template command. Defaults to the name and directory location the `./manifest-generators/template-tccm.sh` script writes to.
-- proxmox_ccm_enabled: Enables installation of the cloud controller manager from [Proxmox Cloud Controller Manager](https://github.com/sergelogvinov/proxmox-cloud-controller-manager/blob/main/docs/install.md).
-- proxmox_ccm_manifest: Location of the manifest generated with the helm template command. Defaults to the name and directory location the `./manifest-generators/template-pccm.sh` script writes to.
-- proxmox_csi_enabled: Enables installation of the [Proxmox CSI Plugin](https://github.com/sergelogvinov/proxmox-csi-plugin/blob/main/charts/proxmox-csi-plugin/README.md).
-- proxmox_csi_manifest: Location of the manifest generated with the helm template command. Defaults to the name and directory location the `./manifest-generators/template-csi.sh` script writes to.
-- cilium_enabled: Enables the replacement of the default flannel cni with cilium.
-- cilium_version: Cilium version. Defaults to v1.4.0.
-- cilium_manifest_file: The location of the cilium manifest generated with the helm template command. Defaults to the name and directory location the `./manifest-generators/template-cilium.sh` script writes to.
-- cilium_ip_pool: Defines the IP pool for IP address assignment for external load balancers / gateways.
-  - start_ip: The start of the IP address range to assign from.
-  - end_ip: The last IP address assignable.
-  - cidr_block: The cidr_block in which to assign IP addresses from.
-- cilium_tlsroute_enabled: Enables install of experimental TLSRoute CRDs.
-- argocd_enabled: Enables installation of the [ArgoCD](https://argo-cd.readthedocs.io/en/stable/).
-- argocd_manifest: Location of the ArgoCD manifest. Defaults to the name and directory location the `./manifest-generators/kustomize-argocd.sh` script writes to.
+- cilium_enabled: Disables the default CNI (flannel) and kube-proxy, and adds a `node.cilium.io/agent-not-ready=true:NoExecute` taint to all nodes. **Cilium must be installed manually via helm before the cluster will function properly.** See the bootstrap instructions in the README. Once ArgoCD is installed, Cilium is managed by `core-deployments/00-base`.
 EOT
 }
 

@@ -61,20 +61,11 @@ proxmox/talos_cluster/
 ├── outputs.tf                 # Output values including client configuration
 ├── provider.tf                # Provider configurations
 ├── patches.tf                 # Patches for Talos configuration
+├── secrets.tf                 # Proxmox API user/token resources for CCM/CSI
 ├── .env/
 │   ├── example.tfvars         # Example configuration
-│   └── manifests/             # Generated manifests (git-ignored)
-│       ├── argocd-manifest.yml # Generated ArgoCD manifest
-│       └── talos-ccm-manifest.yml # Generated Talos CCM manifest
-└── manifest-generators/
-    ├── cilium-values.yaml     # Cilium CNI configuration values
-    ├── talos-ccm-values.yaml  # Talos Cloud Controller Manager values
-    ├── kustomize-argocd.sh    # Script to generate ArgoCD manifests
-    ├── template-cilium.sh     # Script to template Cilium manifests
-    ├── template-tccm.sh       # Script to template Talos CCM manifests
-    └── argocd/
-        ├── kustomization.yaml # ArgoCD kustomization configuration
-        └── namespace.yaml     # ArgoCD namespace definition
+│   └── manifests/             # Generated manifests (git-ignored, no longer used)
+└── README.md                  # This documentation
 ```
 
 ## Key Components
@@ -112,26 +103,49 @@ The module automatically configures certificates with:
 - **API Server Certificates**: Include control plane IPs and hostnames as SANs
 - **Custom SANs**: Supports additional IPs and hostnames via variables
 
+### CNI / Cilium Bootstrap
+
+When `cilium_enabled = true` (the default), this module applies a pre-patch that:
+
+1. **Disables the default CNI** — sets `cluster.network.cni.name = "none"`
+2. **Disables kube-proxy** — sets `cluster.proxy.disabled = true`
+3. **Adds a NoExecute taint** — `node.cilium.io/agent-not-ready=true:NoExecute` on all nodes
+
+> ⚠️ **Important**: When `cilium_enabled = true`, the cluster **will not function** until Cilium is installed. Pods cannot get IP addresses and the taint prevents scheduling. Cilium must be installed manually via helm before the cluster will work properly. See the [New Cluster Bootstrap](#new-cluster-bootstrap) section below.
+
+Once Cilium is running and removes the taint, the cluster is functional and ready for ArgoCD installation. From that point on, Cilium is managed as an ArgoCD application via `core-deployments/00-base`.
+
+### Proxmox API Tokens
+
+The module creates Proxmox VE API tokens for the Proxmox CCM and CSI plugins:
+
+- **CCM Token**: Used by the Proxmox Cloud Controller Manager for node lifecycle management
+- **CSI Token**: Used by the Proxmox CSI Plugin for storage provisioning
+
+These tokens are exported as outputs (`proxmox_ccm_token_id`, `proxmox_ccm_token_secret`, `proxmox_csi_token_id`, `proxmox_csi_token_secret`) and consumed by `core-deployments/00-base` via tofu remote state.
+
 ## Variables Structure
 
 ### Provider Configuration
 
-- [`pve_endpoint`](proxmox/talos_cluster/variables.tf:2): Proxmox VE API endpoint URL
-- [`terraform_state_path`](proxmox/talos_cluster/variables.tf:7): Local path for tofu state file
+- [`pve_endpoint`](proxmox/talos_cluster/variables.tf): Proxmox VE API endpoint URL (single node)
+- [`pve_cluster_endpoint`](proxmox/talos_cluster/variables.tf): Proxmox VE cluster API endpoint URL
+- [`terraform_state_path`](proxmox/talos_cluster/variables.tf): Local path for tofu state file
 
 ### ISO Configuration
 
-- [`iso_node_name`](proxmox/talos_cluster/variables.tf:14): Proxmox node containing the Talos ISO
-- [`iso_datastore_id`](proxmox/talos_cluster/variables.tf:20): Datastore ID for ISO storage
-- [`iso_file_name`](proxmox/talos_cluster/variables.tf:32): Talos ISO filename
-- [`talos_version`](proxmox/talos_cluster/variables.tf:38): Talos version for configuration generation
+- [`iso_node_name`](proxmox/talos_cluster/variables.tf): Proxmox node containing the Talos ISO
+- [`iso_datastore_id`](proxmox/talos_cluster/variables.tf): Datastore ID for ISO storage
+- [`iso_file_name`](proxmox/talos_cluster/variables.tf): Talos ISO filename
+- [`talos_version`](proxmox/talos_cluster/variables.tf): Talos version for configuration generation
 
-### Cluster Configuration ([`talos_cluster`](proxmox/talos_cluster/variables.tf:44))
+### Cluster Configuration ([`talos_cluster`](proxmox/talos_cluster/variables.tf))
 
 The main cluster configuration object includes:
 
 - **cluster_name**: Name of the Kubernetes cluster
 - **cluster_endpoint**: Kubernetes API endpoint URL
+- **region**: Region designator for the cluster
 - **control_plane_vm_id**: Reference VM ID for IP configuration (optional)
 - **dns_domain_suffix**: Domain suffix for hostnames (optional)
 - **machine_install_image**: Custom Talos installation image (optional)
@@ -142,10 +156,12 @@ The main cluster configuration object includes:
 - **etcd_subnets**: Additional etcd subnets
 - **machine_cert_sans**: Additional certificate SANs for machines
 - **api_cert_sans**: Additional certificate SANs for API server
+- **cilium_enabled**: Disables default CNI/kube-proxy and adds Cilium taint (see [CNI / Cilium Bootstrap](#cni--cilium-bootstrap))
+- **talos_ccm_enabled**: Enables Talos CCM patches (kubelet cert rotation, cloud-provider: external)
 
 ### VM Configuration
 
-#### Control Plane VMs ([`control_plane_vms`](proxmox/talos_cluster/variables.tf:85))
+#### Control Plane VMs ([`control_plane_vms`](proxmox/talos_cluster/variables.tf))
 
 List of control plane VM objects with:
 - **vm_name**: Name of the VM
@@ -154,7 +170,7 @@ List of control plane VM objects with:
 - **description**: VM description (optional)
 - **cloud_init_ip_config**: Network configuration for both interfaces
 
-#### Worker VMs ([`worker_vms`](proxmox/talos_cluster/variables.tf:108))
+#### Worker VMs ([`worker_vms`](proxmox/talos_cluster/variables.tf))
 
 List of worker VM objects with the same structure as control plane VMs.
 
@@ -180,7 +196,11 @@ cloud_init_ip_config = [
 
 ## Usage
 
-### 1. Prepare Configuration
+### New Cluster Bootstrap
+
+This is the complete workflow for bootstrapping a new cluster from scratch.
+
+#### 1. Prepare Configuration
 
 Copy the example configuration and customize it:
 
@@ -188,176 +208,70 @@ Copy the example configuration and customize it:
 cp .env/example.tfvars .env/your-cluster.tfvars
 ```
 
-Edit the configuration file with your specific:
-- Proxmox endpoint and credentials
-- Network settings (IP addresses, gateways)
-- VM names and IDs
-- Cluster name and endpoint
-
-### 2. Initialize and Apply
+#### 2. Apply Talos Cluster
 
 ```bash
 tofu init
 tofu apply -var-file=.env/your-cluster.tfvars
 ```
 
-### 3. Configure Talos Client
+After this step, the cluster is bootstrapped but **CNI is disabled** and nodes are tainted. The cluster is not functional yet.
 
-After successful deployment, configure your Talos client:
+#### 3. Install Cilium (Manual)
+
+Cilium must be installed manually before the cluster will function. Use the same values that ArgoCD will manage later:
 
 ```bash
-# Create talos config directory
+# Get kubeconfig from talos_cluster tofu output
+tofu output -raw kubeconfig > ~/.kube/config
+
+# Install Cilium via helm with production values
+helm repo add cilium https://helm.cilium.io
+helm install cilium cilium/cilium --version 1.19.2 --namespace kube-system \
+  -f /path/to/core-deployments/00-base/value_files/cilium.yaml
+
+# Wait for Cilium to be ready (removes the NoExecute taint)
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=cilium -n kube-system --timeout=300s
+```
+
+#### 4. Configure Talos Client
+
+```bash
 mkdir -p ~/.talos
-
-# Extract the client configuration
 tofu output -raw talos_client_config > ~/.talos/config
-
-# Set environment variable
 export TALOSCONFIG=~/.talos/config
-
-# Generate kubeconfig
-talosctl kubeconfig --nodes <bootstrap_endpoint>
 ```
 
-Or use the provided one-liner from the output:
+#### 5. Install ArgoCD
+
+Follow the first-time install instructions in `core-deployments/00-base/README.md`:
 
 ```bash
-mkdir -p ~/.talos && tofu output -raw talos_client_config > ~/.talos/config && export TALOSCONFIG=~/.talos/config && talosctl kubeconfig --nodes <bootstrap_endpoint>
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.2.0/manifests/ha/install.yaml
+kubectl patch configmap argocd-cmd-params-cm -n argocd --type merge -p '{"data":{"server.insecure":"true"}}'
+kubectl wait --for=condition=available --timeout=600s deployment/argocd-server -n argocd
 ```
 
-## Manifest Generation
+#### 6. Deploy 00-base
 
-The module includes several manifest generators in the [`manifest-generators`](proxmox/talos_cluster/manifest-generators) directory that allow you to generate Kubernetes manifests for additional components. These manifests can be automatically installed during cluster bootstrap by enabling the appropriate settings in your tfvars file.
-
-### Available Manifest Generators
-
-#### 1. Cilium CNI Manifest
-
-Generate a Cilium CNI manifest to replace the default Flannel CNI:
+Deploy the base infrastructure via ArgoCD. This adopts Cilium, installs Gateway API CRDs, Talos CCM, Proxmox CCM, and Proxmox CSI:
 
 ```bash
-# Navigate to the manifest generators directory
-cd proxmox/talos_cluster/manifest-generators
-
-# Generate the Cilium manifest
-./template-cilium.sh
-
-# Optionally minify the output (removes comments)
-./template-cilium.sh minify
+cd core-deployments/00-base
+tofu init -var-file=.env/prod.rnimbus.tfvars
+tofu apply -var-file=.env/prod.rnimbus.tfvars -var githubapp_private_key="$(cat ~/secrets/rnimbus-argocd.pem)"
 ```
 
-This creates a manifest at `.env/manifests/cilium-manifest.yml` using the configuration from [`cilium-values.yaml`](proxmox/talos_cluster/manifest-generators/cilium-values.yaml).
+### Adding Workers to an Existing Cluster
 
-To enable Cilium installation, add to your tfvars file:
+For adding workers to an existing cluster:
 
 ```hcl
-talos_cluster = {
-  # ... other configuration
-  cilium_enabled = true
-  cilium_manifest_file = ".env/manifests/cilium-manifest.yml"
-}
+joined_worker_ids = [111, 112]  # VM IDs of already joined workers
 ```
 
-#### 2. Talos Cloud Controller Manager (CCM) Manifest
-
-Generate a Talos Cloud Controller Manager manifest for node certificate management:
-
-```bash
-# Navigate to the manifest generators directory
-cd proxmox/talos_cluster/manifest-generators
-
-# Generate the Talos CCM manifest
-./template-tccm.sh
-
-# Optionally minify the output (removes comments)
-./template-tccm.sh minify
-```
-
-This creates a manifest at `.env/manifests/talos-ccm-manifest.yml` using the configuration from [`talos-ccm-values.yaml`](proxmox/talos_cluster/manifest-generators/talos-ccm-values.yaml).
-
-To enable Talos CCM installation, add to your tfvars file:
-
-```hcl
-talos_cluster = {
-  # ... other configuration
-  talos_ccm_enabled = true
-  talos_ccm_manifest = ".env/manifests/talos-ccm-manifest.yml"
-}
-```
-
-#### 3. ArgoCD Manifest
-
-Generate an ArgoCD manifest for GitOps deployments:
-
-```bash
-# Navigate to the manifest generators directory
-cd proxmox/talos_cluster/manifest-generators
-
-# Generate the ArgoCD manifest
-./kustomize-argocd.sh
-
-# Optionally minify the output (removes comments)
-./kustomize-argocd.sh minify
-```
-
-This creates a manifest at `.env/manifests/argocd-manifest.yml` using the kustomization configuration from the [`argocd`](proxmox/talos_cluster/manifest-generators/argocd) directory.
-
-To enable ArgoCD installation, add to your tfvars file:
-
-```hcl
-talos_cluster = {
-  # ... other configuration
-  argocd_enabled = true
-  argocd_manifest_file = ".env/manifests/argocd-manifest.yml"
-}
-```
-
-### Complete Workflow Example
-
-Here's a complete example of setting up a cluster with Cilium and ArgoCD:
-
-```bash
-# 1. Generate the manifests
-cd proxmox/talos_cluster/manifest-generators
-./template-cilium.sh
-./kustomize-argocd.sh
-
-# 2. Configure your tfvars file to enable these components
-cat > ../.env/my-cluster.tfvars << EOF
-# ... other configuration
-talos_cluster = {
-  # ... other configuration
-  cilium_enabled = true
-  argocd_enabled = true
-  talos_ccm_enabled = true  # Recommended for most clusters
-}
-EOF
-
-# 3. Apply the tofu configuration
-cd ..
-tofu init
-tofu apply -var-file=.env/my-cluster.tfvars
-```
-
-### Customizing Manifests
-
-You can customize the generated manifests by modifying the values files:
-
-- [`cilium-values.yaml`](proxmox/talos_cluster/manifest-generators/cilium-values.yaml): Configure Cilium settings like IPAM, kube-proxy replacement, and Gateway API
-- [`talos-ccm-values.yaml`](proxmox/talos_cluster/manifest-generators/talos-ccm-values.yaml): Configure Talos CCM settings and enabled controllers
-- [`argocd/kustomization.yaml`](proxmox/talos_cluster/manifest-generators/argocd/kustomization.yaml): Configure ArgoCD resources and patches
-
-After making changes, regenerate the manifests and reapply your tofu configuration.
-
-## Outputs
-
-The module provides several outputs:
-
-- [`talos_client_config`](proxmox/talos_cluster/outputs.tf:7): Complete Talos client configuration
-- [`control_plane_config`](proxmox/talos_cluster/outputs.tf:12): Applied control plane configuration
-- [`worker_config`](proxmox/talos_cluster/outputs.tf:16): Applied worker configuration
-- [`client_configuration`](proxmox/talos_cluster/outputs.tf:21): Client configuration details
-- [`talos_config_instructions`](proxmox/talos_cluster/outputs.tf:41): Step-by-step instructions for setting up access
+This allows the module to properly manage workers that have already joined the cluster.
 
 ## Advanced Configuration
 
@@ -394,15 +308,23 @@ talos_cluster = {
 }
 ```
 
-### Worker Node Management
+## Outputs
 
-For adding workers to an existing cluster:
+The module provides several outputs:
 
-```hcl
-joined_worker_ids = [111, 112]  # VM IDs of already joined workers
-```
-
-This allows the module to properly manage workers that have already joined the cluster.
+- [`kubeconfig`](proxmox/talos_cluster/outputs.tf): Raw kubeconfig for cluster access
+- [`talos_client_config`](proxmox/talos_cluster/outputs.tf): Complete Talos client configuration
+- [`control_plane_config`](proxmox/talos_cluster/outputs.tf): Applied control plane configuration
+- [`worker_config`](proxmox/talos_cluster/outputs.tf): Applied worker configuration
+- [`cluster_endpoint`](proxmox/talos_cluster/outputs.tf): Cluster API endpoint URL
+- [`cluster_hostname`](proxmox/talos_cluster/outputs.tf): Cluster hostname
+- [`controlplane_node_hostnames`](proxmox/talos_cluster/outputs.tf): Hostnames of control plane nodes
+- [`controlplane_node_ips`](proxmox/talos_cluster/outputs.tf): IP addresses of control plane nodes
+- [`proxmox_ccm_token_id`](proxmox/talos_cluster/outputs.tf): Proxmox CCM API token ID (used by 00-base)
+- [`proxmox_ccm_token_secret`](proxmox/talos_cluster/outputs.tf): Proxmox CCM API token secret (used by 00-base)
+- [`proxmox_csi_token_id`](proxmox/talos_cluster/outputs.tf): Proxmox CSI API token ID (used by 00-base)
+- [`proxmox_csi_token_secret`](proxmox/talos_cluster/outputs.tf): Proxmox CSI API token secret (used by 00-base)
+- [`talos_config_instructions`](proxmox/talos_cluster/outputs.tf): Step-by-step instructions for setting up access
 
 ## Requirements
 
@@ -433,6 +355,7 @@ This allows the module to properly manage workers that have already joined the c
 2. **Network Configuration**: Verify bridge configurations and IP address assignments
 3. **Bootstrap Failures**: Check that the control plane VM has proper network connectivity
 4. **Certificate Errors**: Verify all required SANs are included in the configuration
+5. **Pods Not Starting**: If `cilium_enabled = true`, ensure Cilium has been installed manually (see [New Cluster Bootstrap](#new-cluster-bootstrap))
 
 ### Debug Commands
 
@@ -448,7 +371,6 @@ talosctl service --nodes <node_ip>
 
 # View logs
 talosctl logs --nodes <node_ip> <service_name>
-```
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
@@ -506,7 +428,7 @@ talosctl logs --nodes <node_ip> <service_name>
 | <a name="input_joined_worker_ids"></a> [joined\_worker\_ids](#input\_joined\_worker\_ids) | List of worker VM\_IDs that have already joined the cluster. This is needed because workers initially need to be configured using their VM's DNS / IP endpoint but once joined need to be managed through a control plane endpoint. | `list(number)` | `[]` | no |
 | <a name="input_pve_cluster_endpoint"></a> [pve\_cluster\_endpoint](#input\_pve\_cluster\_endpoint) | The Cluster Proxmox VE API endpoint URL. | `string` | n/a | yes |
 | <a name="input_pve_endpoint"></a> [pve\_endpoint](#input\_pve\_endpoint) | The Proxmox VE API endpoint URL. Usually a single node. | `string` | n/a | yes |
-| <a name="input_talos_cluster"></a> [talos\_cluster](#input\_talos\_cluster) | Talos cluster configuration settings.<br/><br/>- cluster\_name: The name of the Kubernetes cluster<br/>- cluster\_endpoint: The kubernetes API endpoint of the cluster. For multiple control plane VMs, this is the DNS A record assigned for each VM, or the load balancer if you have one. Example: `https://cluster.local.example.com:6443`<br/>- region: Region designator for the cluster. Added as metadata to the VM and used to create labels for Nodes.<br/>- control\_plane\_vm\_id: The control plane Virtual Machine's vm\_id to reference for ip configuration. If not set, uses the first control plane VM.<br/>- dns\_domain\_suffix: The domain suffix to append to the Virtual Machine names prior to adding them to the certSANS lists. Starts with a '.'. If not set, then the VM names are added as is. (Example: `.local.example.com`).<br/>- machine\_install\_image: The Talos machine installation image to use. Uses the default configure image if not set. Needed for secureboot.<br/>- install\_disk: The disk the talos os will be installed to ('/dev/sda' by default).<br/>- kubelet\_subnet\_ip\_configs: The indexes of ip4 address cloud-init configuration for virtual machine that should be listed as valid subnets for kublet Node IPs.<br/>- etcd\_subnet\_ip\_configs: The indexes of ip4 address cloud-init configuration for virtual machine that should be listed as valid subnets for etcd advertisedSubnets.<br/>- kubelet\_subnets: List of ip4 subnets for kubelet Node IPs. At least kubelet\_subnets or kubelet\_subnet\_ip\_configs must be provided. If both are provided, results are merged.<br/>- etcd\_subnets: List of ip4 subnets for etcd advertisedSubnets. Same rules apply for this and etcd\_subnet\_ip\_configs.<br/>- machine\_cert\_sans: List of IP addresses and hostnames to add as alternate subjects to the generated certificate(s) for each machine / VM.<br/>- api\_cert\_sans: List of IP addresses and hostnames to add as alternate subjects to the generated certificate(s) for the kubernetes API.<br/>- control\_plane\_patches: List of custom patch filenames to apply to control plane nodes.<br/>- node\_patches: List of custom patch filenames to apply to all cluster nodes.<br/>- talos\_ccm\_enabled: Enables installation of the node-csr-approval controller from the [Talos Cloud Controller Manager](https://github.com/siderolabs/talos-cloud-controller-manager/blob/main/README.md). Enables certificate renewal for your nodes. Required for metrics server. <br/>- talos\_ccm\_manifest: Location of the manifest generated with the helm template command. Defaults to the name and directory location the `./manifest-generators/template-tccm.sh` script writes to.<br/>- proxmox\_ccm\_enabled: Enables installation of the cloud controller manager from [Proxmox Cloud Controller Manager](https://github.com/sergelogvinov/proxmox-cloud-controller-manager/blob/main/docs/install.md).<br/>- proxmox\_ccm\_manifest: Location of the manifest generated with the helm template command. Defaults to the name and directory location the `./manifest-generators/template-pccm.sh` script writes to.<br/>- proxmox\_csi\_enabled: Enables installation of the [Proxmox CSI Plugin](https://github.com/sergelogvinov/proxmox-csi-plugin/blob/main/charts/proxmox-csi-plugin/README.md).<br/>- proxmox\_csi\_manifest: Location of the manifest generated with the helm template command. Defaults to the name and directory location the `./manifest-generators/template-csi.sh` script writes to.<br/>- cilium\_enabled: Enables the replacement of the default flannel cni with cilium.<br/>- cilium\_version: Cilium version. Defaults to v1.4.0.<br/>- cilium\_manifest\_file: The location of the cilium manifest generated with the helm template command. Defaults to the name and directory location the `./manifest-generators/template-cilium.sh` script writes to.<br/>- cilium\_ip\_pool: Defines the IP pool for IP address assignment for external load balancers / gateways.<br/>  - start\_ip: The start of the IP address range to assign from.<br/>  - end\_ip: The last IP address assignable.<br/>  - cidr\_block: The cidr\_block in which to assign IP addresses from.<br/>- cilium\_tlsroute\_enabled: Enables install of experimental TLSRoute CRDs.<br/>- argocd\_enabled: Enables installation of the [ArgoCD](https://argo-cd.readthedocs.io/en/stable/).<br/>- argocd\_manifest: Location of the ArgoCD manifest. Defaults to the name and directory location the `./manifest-generators/kustomize-argocd.sh` script writes to. | <pre>object({<br/>    cluster_name              = string<br/>    cluster_endpoint          = string<br/>    region                    = string<br/>    control_plane_vm_id       = optional(number, null)<br/>    dns_domain_suffix         = optional(string, null)<br/>    machine_install_image     = optional(string, null)<br/>    install_disk              = optional(string, null)<br/>    kubelet_subnet_ip_configs = optional(list(number), [])<br/>    etcd_subnet_ip_configs    = optional(list(number), [])<br/>    kubelet_subnets           = optional(list(string), [])<br/>    etcd_subnets              = optional(list(string), [])<br/>    machine_cert_sans         = optional(list(string), [])<br/>    api_cert_sans             = optional(list(string), [])<br/>    control_plane_patches     = optional(list(string), [])<br/>    node_patches              = optional(list(string), [])<br/>    talos_ccm_enabled         = optional(bool, true)<br/>    talos_ccm_manifest        = optional(string, ".env/manifests/talos-ccm-manifest.yml")<br/>    proxmox_ccm_enabled       = optional(bool, true)<br/>    proxmox_ccm_manifest      = optional(string, ".env/manifests/proxmox-ccm-manifest.yml")<br/>    proxmox_csi_enabled       = optional(bool, true)<br/>    proxmox_csi_manifest      = optional(string, ".env/manifests/proxmox-csi-manifest.yml")<br/>    cilium_enabled            = optional(bool, false)<br/>    cilium_version            = optional(string, "v1.4.0")<br/>    cilium_manifest_file      = optional(string, ".env/manifests/cilium-manifest.yml")<br/>    cilium_ip_pool = optional(object({<br/>      start_ip   = optional(string, ""),<br/>      end_ip     = optional(string, ""),<br/>      cidr_block = optional(string, "")<br/>    }))<br/>    cilium_tlsroute_enabled = optional(bool, false)<br/>    argocd_enabled          = optional(bool, false)<br/>    argocd_manifest_file    = optional(string, ".env/manifests/argocd-manifest.yml")<br/>  })</pre> | n/a | yes |
+| <a name="input_talos_cluster"></a> [talos\_cluster](#input\_talos\_cluster) | Talos cluster configuration settings.<br/><br/>- cluster\_name: The name of the Kubernetes cluster<br/>- cluster\_endpoint: The kubernetes API endpoint of the cluster. For multiple control plane VMs, this is the DNS A record assigned for each VM, or the load balancer if you have one. Example: `https://cluster.local.example.com:6443`<br/>- region: Region designator for the cluster. Added as metadata to the VM and used to create labels for Nodes.<br/>- control\_plane\_vm\_id: The control plane Virtual Machine's vm\_id to reference for ip configuration. If not set, uses the first control plane VM.<br/>- dns\_domain\_suffix: The domain suffix to append to the Virtual Machine names prior to adding them to the certSANS lists. Starts with a '.'. If not set, then the VM names are added as is. (Example: `.local.example.com`).<br/>- machine\_install\_image: The Talos machine installation image to use. Uses the default configure image if not set. Needed for secureboot.<br/>- install\_disk: The disk the talos os will be installed to ('/dev/sda' by default).<br/>- kubelet\_subnet\_ip\_configs: The indexes of ip4 address cloud-init configuration for virtual machine that should be listed as valid subnets for kublet Node IPs.<br/>- etcd\_subnet\_ip\_configs: The indexes of ip4 address cloud-init configuration for virtual machine that should be listed as valid subnets for etcd advertisedSubnets.<br/>- kubelet\_subnets: List of ip4 subnets for kubelet Node IPs. At least kubelet\_subnets or kubelet\_subnet\_ip\_configs must be provided. If both are provided, results are merged.<br/>- etcd\_subnets: List of ip4 subnets for etcd advertisedSubnets. Same rules apply for this and etcd\_subnet\_ip\_configs.<br/>- machine\_cert\_sans: List of IP addresses and hostnames to add as alternate subjects to the generated certificate(s) for each machine / VM.<br/>- api\_cert\_sans: List of IP addresses and hostnames to add as alternate subjects to the generated certificate(s) for the kubernetes API.<br/>- control\_plane\_patches: List of custom patch filenames to apply to control plane nodes.<br/>- node\_patches: List of custom patch filenames to apply to all cluster nodes.<br/>- talos\_ccm\_enabled: Enables installation of the node-csr-approval controller from the [Talos Cloud Controller Manager](https://github.com/siderolabs/talos-cloud-controller-manager/blob/main/README.md). Enables certificate renewal for your nodes. Required for metrics server. <br/>- cilium\_enabled: Disables the default CNI (flannel) and kube-proxy, and adds a `node.cilium.io/agent-not-ready=true:NoExecute` taint to all nodes. **Cilium must be installed manually via helm before the cluster will function properly.** See the bootstrap instructions in the README. Once ArgoCD is installed, Cilium is managed by `core-deployments/00-base`. | <pre>object({<br/>    cluster_name              = string<br/>    cluster_endpoint          = string<br/>    region                    = string<br/>    control_plane_vm_id       = optional(number, null)<br/>    dns_domain_suffix         = optional(string, null)<br/>    machine_install_image     = optional(string, null)<br/>    install_disk              = optional(string, null)<br/>    kubelet_subnet_ip_configs = optional(list(number), [])<br/>    etcd_subnet_ip_configs    = optional(list(number), [])<br/>    kubelet_subnets           = optional(list(string), [])<br/>    etcd_subnets              = optional(list(string), [])<br/>    machine_cert_sans         = optional(list(string), [])<br/>    api_cert_sans             = optional(list(string), [])<br/>    control_plane_patches     = optional(list(string), [])<br/>    node_patches              = optional(list(string), [])<br/>    talos_ccm_enabled         = optional(bool, true)<br/>    cilium_enabled            = optional(bool, false)<br/>  })</pre> | n/a | yes |
 | <a name="input_talos_version"></a> [talos\_version](#input\_talos\_version) | The version of talos features to use in generated machine configuration. | `string` | n/a | yes |
 | <a name="input_terraform_state_path"></a> [terraform\_state\_path](#input\_terraform\_state\_path) | The local path for storing Terraform state file | `string` | `".terraform/terraform.tfstate"` | no |
 | <a name="input_worker_vms"></a> [worker\_vms](#input\_worker\_vms) | List of worker VM configurations for the Talos Kubernetes cluster.<br/><br/>Each worker VM object supports the following parameters:<br/><br/>- vm\_name: (Required) The name of the virtual machine. This name will be used for cluster identification and DNS resolution.<br/>- vm\_id: (Required) Unique ID of the Virtual Machine. Must be a value between 100 and 999,999,999 and unique across the entire Proxmox cluster.<br/>- node\_name: (Required) The name of the Proxmox node to assign the virtual machine to.<br/>- cpu\_cores: (Optional) The amount of vCPU / cores to assign to the the worker VM.<br/>- memory\_mb: (Optional) The amount of memory (in MB) to assign to the the worker VM.<br/>- datastore\_id: (Optional) The ID of the datastore used for the primary disk.<br/>- disk\_size: (Optional) Size of the worker VM's primary disk in GB.<br/>- description: (Optional) Description for the virtual machine. Defaults to "Talos worker".<br/>- cloud\_init\_ip\_config: (Required) List of IP configurations for cloud-init network setup.<br/>  - ipv4: (Optional) IPv4 configuration object.<br/>    - address: (Required) IPv4 address in CIDR notation (e.g., "192.168.1.20/24") or "dhcp" for autodiscovery.<br/>    - gateway: (Optional) IPv4 gateway address. Omit if address is set to "dhcp".<br/>  - ipv6: (Optional) IPv6 configuration object.<br/>    - address: (Required) IPv6 address in CIDR notation (e.g., "2001:db8::20/64") or "dhcp" for autodiscovery.<br/>    - gateway: (Optional) IPv6 gateway address. Omit if address is set to "dhcp".<br/>- hostpci: (Optional) List of host PCI device configurations for hardware passthrough.<br/>  - device: (Required) The device identifier (e.g., "hostpci0").<br/>  - id: (Required) The PCI device ID (e.g., "0000:65:00.0").<br/>  - pcie: (Optional) Whether to use PCIe mode. Defaults to false.<br/>  - rombar: (Optional) Whether to expose the ROM bar. Defaults to true.<br/>  - xvga: (Optional) Whether to use XVGA. Defaults to false.<br/><br/>Note: Worker VMs are optional but recommended for running container workloads. They can be scaled horizontally to handle increased workload demands. | <pre>list(object({<br/>    vm_name      = string<br/>    vm_id        = number<br/>    node_name    = string<br/>    cpu_cores    = optional(number, 2)<br/>    memory_mb    = optional(number, 2048)<br/>    datastore_id = optional(string, "local-cluster-zfs")<br/>    disk_size    = optional(number, 100)<br/>    description  = optional(string, "Talos worker")<br/><br/>    cloud_init_ip_config = list(object({<br/>      ipv4 = optional(object({<br/>        address = string<br/>        gateway = optional(string)<br/>      }))<br/>      ipv6 = optional(object({<br/>        address = string<br/>        gateway = optional(string)<br/>      }))<br/>    }))<br/><br/>    hostpci = optional(list(object({<br/>      device = string<br/>      id     = string<br/>      pcie   = optional(bool, false)<br/>      rombar = optional(bool, true)<br/>      xvga   = optional(bool, false)<br/>    })), [])<br/><br/>  }))</pre> | `[]` | no |
@@ -524,6 +446,10 @@ talosctl logs --nodes <node_ip> <service_name>
 | <a name="output_kubeconfig_ca_certificate"></a> [kubeconfig\_ca\_certificate](#output\_kubeconfig\_ca\_certificate) | n/a |
 | <a name="output_kubeconfig_client_certificate"></a> [kubeconfig\_client\_certificate](#output\_kubeconfig\_client\_certificate) | n/a |
 | <a name="output_kubeconfig_client_key"></a> [kubeconfig\_client\_key](#output\_kubeconfig\_client\_key) | n/a |
+| <a name="output_proxmox_ccm_token_id"></a> [proxmox\_ccm\_token\_id](#output\_proxmox\_ccm\_token\_id) | Proxmox API tokens - exported for use by core-deployments/00-base |
+| <a name="output_proxmox_ccm_token_secret"></a> [proxmox\_ccm\_token\_secret](#output\_proxmox\_ccm\_token\_secret) | n/a |
+| <a name="output_proxmox_csi_token_id"></a> [proxmox\_csi\_token\_id](#output\_proxmox\_csi\_token\_id) | n/a |
+| <a name="output_proxmox_csi_token_secret"></a> [proxmox\_csi\_token\_secret](#output\_proxmox\_csi\_token\_secret) | n/a |
 | <a name="output_talos_client_config"></a> [talos\_client\_config](#output\_talos\_client\_config) | n/a |
 | <a name="output_talos_cluster_kubeconfig"></a> [talos\_cluster\_kubeconfig](#output\_talos\_cluster\_kubeconfig) | n/a |
 | <a name="output_talos_config_instructions"></a> [talos\_config\_instructions](#output\_talos\_config\_instructions) | n/a |
