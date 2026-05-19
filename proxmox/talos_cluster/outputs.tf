@@ -108,3 +108,24 @@ output "talos_config_instructions" {
               mkdir -p ~/.talos && tofu output -raw -var pve_endpoint=${var.pve_endpoint} -var terraform_state_path="${var.terraform_state_path}" talos_client_config > ~/.talos/config && export TALOSCONFIG=~/.talos/config && talosctl kubeconfig --nodes ${local.bootstrap_endpoint}
              EOT
 }
+
+# Proxmox API tokens - exported for use by core-deployments/00-base
+output "proxmox_ccm_token_id" {
+  value     = proxmox_virtual_environment_user_token.ccm.id
+  sensitive = true
+}
+
+output "proxmox_ccm_token_secret" {
+  value     = replace(proxmox_virtual_environment_user_token.ccm.value, "${proxmox_virtual_environment_user_token.ccm.id}=", "")
+  sensitive = true
+}
+
+output "proxmox_csi_token_id" {
+  value     = proxmox_virtual_environment_user_token.csi.id
+  sensitive = true
+}
+
+output "proxmox_csi_token_secret" {
+  value     = replace(proxmox_virtual_environment_user_token.csi.value, "${proxmox_virtual_environment_user_token.csi.id}=", "")
+  sensitive = true
+}

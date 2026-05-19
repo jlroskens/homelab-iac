@@ -15,7 +15,7 @@ talos_version = "1.12.6"
 talos_cluster = {
   cluster_name = "example"
   cluster_endpoint = "https://cluster.local.example.com:6443"
-  talos_cluster = "myregion"
+  region = "myregion"
   control_plane_vm_id = 101
   dns_domain_suffix = ".cluster.local.example.com"
   machine_install_image = "factory.talos.dev/nocloud-installer-secureboot/aeec243e3a4c2a14f9ba74b1a8c7662f03eea658a7ea5f1c26fdd491280c88f8:v1.12.6"
@@ -28,15 +28,7 @@ talos_cluster = {
   api_cert_sans = ["cluster.local.example.com"]
   cilium_enabled = true
   talos_ccm_enabled = true
-  proxmox_ccm_enabled = true
-  proxmox_csi_enabled = true
   control_plane_patches = []
-  cilium_ip_pool = {
-    start_ip = "192.168.12.130"
-    end_ip = "192.168.12.149"
-  }
-  cilium_tlsroute_enabled = true
-  argocd_enabled = true
 }
 
 joined_worker_ids = []
