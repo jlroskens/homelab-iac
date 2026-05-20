@@ -390,14 +390,14 @@ talosctl logs --nodes <node_ip> <service_name>
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.6 |
 | <a name="requirement_corefunc"></a> [corefunc](#requirement\_corefunc) | ~> 2.1 |
 | <a name="requirement_proxmox"></a> [proxmox](#requirement\_proxmox) | ~> 0.86 |
-| <a name="requirement_talos"></a> [talos](#requirement\_talos) | ~> 0.9.0 |
+| <a name="requirement_talos"></a> [talos](#requirement\_talos) | ~> 0.11 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
 | <a name="provider_proxmox"></a> [proxmox](#provider\_proxmox) | ~> 0.86 |
-| <a name="provider_talos"></a> [talos](#provider\_talos) | ~> 0.9.0 |
+| <a name="provider_talos"></a> [talos](#provider\_talos) | ~> 0.11 |
 
 ## Modules
 
@@ -420,7 +420,7 @@ talosctl logs --nodes <node_ip> <service_name>
 | [talos_machine_configuration_apply.control_plane](https://registry.terraform.io/providers/siderolabs/talos/latest/docs/resources/machine_configuration_apply) | resource |
 | [talos_machine_configuration_apply.worker](https://registry.terraform.io/providers/siderolabs/talos/latest/docs/resources/machine_configuration_apply) | resource |
 | [talos_machine_secrets.this](https://registry.terraform.io/providers/siderolabs/talos/latest/docs/resources/machine_secrets) | resource |
-| [proxmox_virtual_environment_file.iso](https://registry.terraform.io/providers/bpg/proxmox/latest/docs/data-sources/virtual_environment_file) | data source |
+| [proxmox_file.iso](https://registry.terraform.io/providers/bpg/proxmox/latest/docs/data-sources/file) | data source |
 | [proxmox_virtual_environment_role.k8sCCM](https://registry.terraform.io/providers/bpg/proxmox/latest/docs/data-sources/virtual_environment_role) | data source |
 | [proxmox_virtual_environment_role.k8sCSI](https://registry.terraform.io/providers/bpg/proxmox/latest/docs/data-sources/virtual_environment_role) | data source |
 | [talos_client_configuration.this](https://registry.terraform.io/providers/siderolabs/talos/latest/docs/data-sources/client_configuration) | data source |
