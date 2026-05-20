@@ -1,4 +1,4 @@
-data "proxmox_virtual_environment_file" "iso" {
+data "proxmox_file" "iso" {
   node_name    = var.iso_node_name
   datastore_id = var.iso_datastore_id
   content_type = var.iso_content_type
@@ -67,7 +67,7 @@ module "control_plane_vms" {
   ]
 
   cdrom = {
-    file_id   = data.proxmox_virtual_environment_file.iso.id
+    file_id   = data.proxmox_file.iso.id
     interface = "ide0"
   }
 
@@ -139,7 +139,7 @@ module "worker_vms" {
   hostpci = each.value.hostpci
 
   cdrom = {
-    file_id   = data.proxmox_virtual_environment_file.iso.id
+    file_id   = data.proxmox_file.iso.id
     interface = "ide0"
   }
 

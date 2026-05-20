@@ -29,6 +29,7 @@ talos_cluster = {
   cilium_enabled = true
   talos_ccm_enabled = true
   control_plane_patches = []
+  node_patches = []
 }
 
 joined_worker_ids = []
@@ -75,7 +76,7 @@ control_plane_vms = [
   },
   {
     vm_name   = "talos-ctrlp-3"
-    vm_id     = 102
+    vm_id     = 103
     node_name = "pve-host-03"
     description = "Talos control plane 3"
     cloud_init_ip_config = [
