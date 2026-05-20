@@ -55,7 +55,7 @@ This separation provides:
 
 ```
 proxmox/talos_cluster/
-├── main.tf                    # VM creation and configuration
+├── nodes.tf                   # VM creation and configuration
 ├── cluster.tf                 # Talos cluster configuration and bootstrap
 ├── variables.tf               # Variable definitions
 ├── outputs.tf                 # Output values including client configuration
@@ -70,20 +70,20 @@ proxmox/talos_cluster/
 
 ## Key Components
 
-### VM Configuration ([`main.tf`](proxmox/talos_cluster/main.tf))
+### VM Configuration ([`nodes.tf`](proxmox/talos_cluster/nodes.tf))
 
 The module creates two types of VMs:
 
 #### Control Plane VMs
-- **CPU**: 1 core with 900 CPU units
-- **Memory**: 2GB dedicated with ballooning enabled
-- **Storage**: 100GB virtio disk
+- **CPU**: 2 cores (default) with 900 CPU units
+- **Memory**: 2GB dedicated (default) with ballooning enabled
+- **Storage**: 100GB virtio disk (default) on `local-cluster-zfs` datastore (default)
 - **Boot**: From disk then CD-ROM (for initial Talos installation)
 
 #### Worker VMs
-- **CPU**: 2 cores with 800 CPU units
-- **Memory**: 8GB dedicated with ballooning enabled
-- **Storage**: 100GB virtio disk
+- **CPU**: 2 cores (default) with 800 CPU units
+- **Memory**: 2GB dedicated (default) with ballooning enabled
+- **Storage**: 100GB virtio disk (default) on `local-cluster-zfs` datastore (default)
 - **Boot**: From disk then CD-ROM (for initial Talos installation)
 
 ### Cluster Configuration ([`cluster.tf`](proxmox/talos_cluster/cluster.tf))
@@ -105,7 +105,7 @@ The module automatically configures certificates with:
 
 ### CNI / Cilium Bootstrap
 
-When `cilium_enabled = true` (the default), this module applies a pre-patch that:
+When `cilium_enabled = true`, this module applies a pre-patch that:
 
 1. **Disables the default CNI** — sets `cluster.network.cni.name = "none"`
 2. **Disables kube-proxy** — sets `cluster.proxy.disabled = true`
@@ -156,6 +156,8 @@ The main cluster configuration object includes:
 - **etcd_subnets**: Additional etcd subnets
 - **machine_cert_sans**: Additional certificate SANs for machines
 - **api_cert_sans**: Additional certificate SANs for API server
+- **control_plane_patches**: List of custom patch filenames to apply to control plane nodes
+- **node_patches**: List of custom patch filenames to apply to all cluster nodes
 - **cilium_enabled**: Disables default CNI/kube-proxy and adds Cilium taint (see [CNI / Cilium Bootstrap](#cni--cilium-bootstrap))
 - **talos_ccm_enabled**: Enables Talos CCM patches (kubelet cert rotation, cloud-provider: external)
 
@@ -167,8 +169,13 @@ List of control plane VM objects with:
 - **vm_name**: Name of the VM
 - **vm_id**: Unique VM ID number
 - **node_name**: Proxmox host where VM will be created
+- **cpu_cores**: Number of vCPU cores (optional, default: 2)
+- **memory_mb**: Memory in MB (optional, default: 2048)
+- **datastore_id**: Datastore ID for the primary disk (optional, default: `local-cluster-zfs`)
+- **disk_size**: Disk size in GB (optional, default: 100)
 - **description**: VM description (optional)
 - **cloud_init_ip_config**: Network configuration for both interfaces
+- **hostpci**: List of host PCI device configurations for hardware passthrough (optional)
 
 #### Worker VMs ([`worker_vms`](proxmox/talos_cluster/variables.tf))
 
@@ -313,6 +320,10 @@ talos_cluster = {
 The module provides several outputs:
 
 - [`kubeconfig`](proxmox/talos_cluster/outputs.tf): Raw kubeconfig for cluster access
+- [`talos_cluster_kubeconfig`](proxmox/talos_cluster/outputs.tf): Full kubeconfig resource object
+- [`kubeconfig_ca_certificate`](proxmox/talos_cluster/outputs.tf): kubeconfig CA certificate
+- [`kubeconfig_client_certificate`](proxmox/talos_cluster/outputs.tf): kubeconfig client certificate
+- [`kubeconfig_client_key`](proxmox/talos_cluster/outputs.tf): kubeconfig client key
 - [`talos_client_config`](proxmox/talos_cluster/outputs.tf): Complete Talos client configuration
 - [`control_plane_config`](proxmox/talos_cluster/outputs.tf): Applied control plane configuration
 - [`worker_config`](proxmox/talos_cluster/outputs.tf): Applied worker configuration
@@ -379,14 +390,14 @@ talosctl logs --nodes <node_ip> <service_name>
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.6 |
 | <a name="requirement_corefunc"></a> [corefunc](#requirement\_corefunc) | ~> 2.1 |
 | <a name="requirement_proxmox"></a> [proxmox](#requirement\_proxmox) | ~> 0.86 |
-| <a name="requirement_talos"></a> [talos](#requirement\_talos) | ~> 0.9.0 |
+| <a name="requirement_talos"></a> [talos](#requirement\_talos) | ~> 0.11 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
 | <a name="provider_proxmox"></a> [proxmox](#provider\_proxmox) | ~> 0.86 |
-| <a name="provider_talos"></a> [talos](#provider\_talos) | ~> 0.9.0 |
+| <a name="provider_talos"></a> [talos](#provider\_talos) | ~> 0.11 |
 
 ## Modules
 
@@ -409,7 +420,7 @@ talosctl logs --nodes <node_ip> <service_name>
 | [talos_machine_configuration_apply.control_plane](https://registry.terraform.io/providers/siderolabs/talos/latest/docs/resources/machine_configuration_apply) | resource |
 | [talos_machine_configuration_apply.worker](https://registry.terraform.io/providers/siderolabs/talos/latest/docs/resources/machine_configuration_apply) | resource |
 | [talos_machine_secrets.this](https://registry.terraform.io/providers/siderolabs/talos/latest/docs/resources/machine_secrets) | resource |
-| [proxmox_virtual_environment_file.iso](https://registry.terraform.io/providers/bpg/proxmox/latest/docs/data-sources/virtual_environment_file) | data source |
+| [proxmox_file.iso](https://registry.terraform.io/providers/bpg/proxmox/latest/docs/data-sources/file) | data source |
 | [proxmox_virtual_environment_role.k8sCCM](https://registry.terraform.io/providers/bpg/proxmox/latest/docs/data-sources/virtual_environment_role) | data source |
 | [proxmox_virtual_environment_role.k8sCSI](https://registry.terraform.io/providers/bpg/proxmox/latest/docs/data-sources/virtual_environment_role) | data source |
 | [talos_client_configuration.this](https://registry.terraform.io/providers/siderolabs/talos/latest/docs/data-sources/client_configuration) | data source |
